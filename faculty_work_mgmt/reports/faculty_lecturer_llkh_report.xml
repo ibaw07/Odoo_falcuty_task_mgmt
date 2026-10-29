@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_faculty_lecturer_llkh">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page" style="font-family: 'Times New Roman', Times, serif; font-size: 13pt; line-height: 1.4; color: #000;">
+                        <!-- Quốc hiệu & Tiêu ngữ -->
+                        <div class="row text-center mb-3">
+                            <div class="col-12">
+                                <h5 class="fw-bold mb-1" style="font-size: 13pt; text-transform: uppercase;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</h5>
+                                <h6 class="fw-bold mb-1" style="font-size: 13pt;">Độc lập - Tự do - Hạnh phúc</h6>
+                                <div style="width: 180px; height: 1px; background-color: #000; margin: 0 auto 15px auto;"></div>
+                                <h3 class="fw-bold text-uppercase mt-2" style="font-size: 16pt;">BẢN LÝ LỊCH KHOA HỌC</h3>
+                                <p class="fst-italic" style="font-size: 11pt;">(Ban hành kèm theo quy định quản lý hoạt động khoa học công nghệ)</p>
+                            </div>
+                        </div>
+
+                        <!-- I. THÔNG TIN CÁ NHÂN -->
+                        <div class="mb-3">
+                            <h5 class="fw-bold text-uppercase" style="font-size: 13pt; border-bottom: 1px solid #000; padding-bottom: 3px;">
+                                I. THÔNG TIN CÁ NHÂN
+                            </h5>
+                            <table class="table table-borderless table-sm mb-1" style="font-size: 12pt;">
+                                <tr>
+                                    <td style="width: 25%;"><strong>1. Họ và tên:</strong></td>
+                                    <td style="width: 40%;"><span t-field="o.name" class="fw-bold text-uppercase"/></td>
+                                    <td style="width: 15%;"><strong>2. Giới tính:</strong></td>
+                                    <td style="width: 20%;"><span t-field="o.gender"/></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>3. Ngày sinh:</strong></td>
+                                    <td><span t-field="o.birth_date" t-options="{'widget': 'date'}"/></td>
+                                    <td><strong>4. Nơi sinh:</strong></td>
+                                    <td><span t-field="o.place_of_birth"/></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>5. Quê quán:</strong></td>
+                                    <td colspan="3"><span t-field="o.hometown"/></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>6. Số CCCD:</strong></td>
+                                    <td><span t-field="o.id_card_number"/></td>
+                                    <td><strong>Ngày cấp:</strong></td>
+                                    <td><span t-field="o.id_card_issue_date" t-options="{'widget': 'date'}"/> (Nơi cấp: <span t-field="o.id_card_place"/>)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>7. Học vị cao nhất:</strong></td>
+                                    <td>
+                                        <span t-field="o.academic_degree"/>
+                                        <t t-if="o.degree_recognition_year"> (Năm công nhận: <span t-field="o.degree_recognition_year"/>)</t>
+                                    </td>
+                                    <td><strong>8. Học hàm:</strong></td>
+                                    <td>
+                                        <span t-field="o.academic_title"/>
+                                        <t t-if="o.title_appointment_year"> (Năm bổ nhiệm: <span t-field="o.title_appointment_year"/>)</t>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>9. Cấp bậc &amp; Chức vụ:</strong></td>
+                                    <td colspan="3"><span t-field="o.rank_position_display" class="fw-bold text-primary"/></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>10. Đơn vị công tác:</strong></td>
+                                    <td colspan="3"><span t-field="o.office_address"/></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>11. Điện thoại / Email:</strong></td>
+                                    <td colspan="3"><span t-field="o.phone"/> | <span t-field="o.email"/></td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <!-- II. NGOẠI NGỮ & TIN HỌC -->
+                        <div class="mb-3">
+                            <h5 class="fw-bold text-uppercase" style="font-size: 13pt; border-bottom: 1px solid #000; padding-bottom: 3px;">
+                                II. TRÌNH ĐỘ NGOẠI NGỮ VÀ TIN HỌC
+                            </h5>
+                            <p class="mb-1" style="font-size: 12pt;"><strong>Ngoại ngữ:</strong> <span t-field="o.foreign_languages"/></p>
+                            <p class="mb-1" style="font-size: 12pt;"><strong>Tin học:</strong> <span t-field="o.it_skills"/></p>
+                        </div>
+
+                        <!-- III. QUÁ TRÌNH ĐÀO TẠO -->
+                        <div class="mb-3">
+                            <h5 class="fw-bold text-uppercase" style="font-size: 13pt; border-bottom: 1px solid #000; padding-bottom: 3px;">
+                                III. QUÁ TRÌNH ĐÀO TẠO
+                            </h5>
+                            <table class="table table-bordered table-sm" style="font-size: 11pt; border-color: #333;">
+                                <thead style="background-color: #f2f2f2;" class="text-center">
+                                    <tr>
+                                        <th style="width: 15%;">Thời gian</th>
+                                        <th style="width: 35%;">Cơ sở đào tạo</th>
+                                        <th style="width: 30%;">Chuyên ngành đào tạo</th>
+                                        <th style="width: 20%;">Văn bằng / Xếp loại</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-set="trainings" t-value="o.resume_line_ids.filtered(lambda l: l.type == 'training')"/>
+                                    <t t-if="trainings">
+                                        <tr t-foreach="trainings" t-as="t">
+                                            <td class="text-center"><span t-field="t.period"/></td>
+                                            <td><span t-field="t.institution"/></td>
+                                            <td><span t-field="t.name"/></td>
+                                            <td class="text-center"><span t-field="t.result"/></td>
+                                        </tr>
+                                    </t>
+                                    <t t-else="">
+                                        <tr><td colspan="4" class="text-center fst-italic">Chưa có thông tin</td></tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- IV. QUÁ TRÌNH CÔNG TÁC CHUYÊN MÔN -->
+                        <div class="mb-3">
+                            <h5 class="fw-bold text-uppercase" style="font-size: 13pt; border-bottom: 1px solid #000; padding-bottom: 3px;">
+                                IV. QUÁ TRÌNH CÔNG TÁC CHUYÊN MÔN
+                            </h5>
+                            <table class="table table-bordered table-sm" style="font-size: 11pt; border-color: #333;">
+                                <thead style="background-color: #f2f2f2;" class="text-center">
+                                    <tr>
+                                        <th style="width: 15%;">Thời gian</th>
+                                        <th style="width: 45%;">Đơn vị công tác</th>
+                                        <th style="width: 25%;">Chức danh / Vị trí</th>
+                                        <th style="width: 15%;">Ghi chú</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-set="works" t-value="o.resume_line_ids.filtered(lambda l: l.type == 'work')"/>
+                                    <t t-if="works">
+                                        <tr t-foreach="works" t-as="w">
+                                            <td class="text-center"><span t-field="w.period"/></td>
+                                            <td><span t-field="w.institution"/></td>
+                                            <td><span t-field="w.role"/></td>
+                                            <td><span t-field="w.result"/></td>
+                                        </tr>
+                                    </t>
+                                    <t t-else="">
+                                        <tr><td colspan="4" class="text-center fst-italic">Chưa có thông tin</td></tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- V. KINH NGHIỆM QUẢN LÝ & ĐÀO TẠO -->
+                        <div class="mb-3" t-if="o.management_experience">
+                            <h5 class="fw-bold text-uppercase" style="font-size: 13pt; border-bottom: 1px solid #000; padding-bottom: 3px;">
+                                V. KINH NGHIỆM QUẢN LÝ, GIẢNG DẠY VÀ ĐÀO TẠO
+                            </h5>
+                            <p style="font-size: 12pt; text-align: justify;"><span t-field="o.management_experience"/></p>
+                        </div>
+
+                        <!-- VI. CÔNG TRÌNH KHOA HỌC TIÊU BIỂU (TỐI ĐA 5 BÀI) -->
+                        <div class="mb-3">
+                            <h5 class="fw-bold text-uppercase" style="font-size: 13pt; border-bottom: 1px solid #000; padding-bottom: 3px;">
+                                VI. CÁC CÔNG TRÌNH KHOA HỌC TIÊU BIỂU ĐÃ CÔNG BỐ (TỐI ĐA 5 CÔNG TRÌNH)
+                            </h5>
+                            <table class="table table-bordered table-sm" style="font-size: 11pt; border-color: #333;">
+                                <thead style="background-color: #f2f2f2;" class="text-center">
+                                    <tr>
+                                        <th style="width: 5%;">TT</th>
+                                        <th style="width: 45%;">Tên công trình / Bài báo khoa học</th>
+                                        <th style="width: 25%;">Tác giả</th>
+                                        <th style="width: 15%;">Tạp chí / Kỷ yếu</th>
+                                        <th style="width: 10%;">Năm</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-set="selected_pubs" t-value="o.publication_ids.filtered(lambda p: p.is_top_selected)[:5]"/>
+                                    <t t-if="not selected_pubs and o.publication_ids">
+                                        <!-- Nếu chưa tích chọn bài nào, hiển thị tối đa 5 bài mới nhất -->
+                                        <t t-set="selected_pubs" t-value="o.publication_ids[:5]"/>
+                                    </t>
+                                    <t t-if="selected_pubs">
+                                        <t t-set="idx" t-value="1"/>
+                                        <tr t-foreach="selected_pubs" t-as="pub">
+                                            <td class="text-center"><span t-esc="idx"/></td>
+                                            <td><strong><span t-field="pub.name"/></strong></td>
+                                            <td><span t-field="pub.authors"/></td>
+                                            <td><span t-field="pub.journal"/> (<span t-field="pub.pub_type"/>)</td>
+                                            <td class="text-center"><span t-field="pub.year"/></td>
+                                            <t t-set="idx" t-value="idx + 1"/>
+                                        </tr>
+                                    </t>
+                                    <t t-else="">
+                                        <tr><td colspan="5" class="text-center fst-italic">Chưa có công trình công bố</td></tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- VII. SÁCH, GIÁO TRÌNH XUẤT BẢN -->
+                        <div class="mb-3" t-if="o.published_books">
+                            <h5 class="fw-bold text-uppercase" style="font-size: 13pt; border-bottom: 1px solid #000; padding-bottom: 3px;">
+                                VII. SÁCH, GIÁO TRÌNH ĐÃ XUẤT BẢN
+                            </h5>
+                            <p style="font-size: 12pt; text-align: justify;"><span t-field="o.published_books"/></p>
+                        </div>
+
+                        <!-- VIII. ĐỀ TÀI / NHIỆM VỤ KH&CN -->
+                        <div class="mb-3">
+                            <h5 class="fw-bold text-uppercase" style="font-size: 13pt; border-bottom: 1px solid #000; padding-bottom: 3px;">
+                                VIII. ĐỀ TÀI, DỰ ÁN, NHIỆM VỤ KH&amp;CN ĐÃ CHỦ TRÌ / THAM GIA
+                            </h5>
+                            <table class="table table-bordered table-sm" style="font-size: 11pt; border-color: #333;">
+                                <thead style="background-color: #f2f2f2;" class="text-center">
+                                    <tr>
+                                        <th style="width: 15%;">Thời gian</th>
+                                        <th style="width: 45%;">Tên đề tài / Nhiệm vụ KH&amp;CN</th>
+                                        <th style="width: 20%;">Cấp quản lý</th>
+                                        <th style="width: 20%;">Trách nhiệm / Kết quả</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-set="projects" t-value="o.resume_line_ids.filtered(lambda l: l.type == 'project')"/>
+                                    <t t-if="projects">
+                                        <tr t-foreach="projects" t-as="pr">
+                                            <td class="text-center"><span t-field="pr.period"/></td>
+                                            <td><strong><span t-field="pr.name"/></strong></td>
+                                            <td><span t-field="pr.institution"/></td>
+                                            <td><span t-field="pr.role"/> - <span t-field="pr.result"/></td>
+                                        </tr>
+                                    </t>
+                                    <t t-else="">
+                                        <tr><td colspan="4" class="text-center fst-italic">Chưa có thông tin đề tài</td></tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- IX. VĂN BẰNG SỞ HỮU TRÍ TUỆ -->
+                        <div class="mb-3">
+                            <h5 class="fw-bold text-uppercase" style="font-size: 13pt; border-bottom: 1px solid #000; padding-bottom: 3px;">
+                                IX. VĂN BẰNG BẢO HỘ SỞ HỮU TRÍ TUỆ
+                            </h5>
+                            <table class="table table-bordered table-sm" style="font-size: 11pt; border-color: #333;">
+                                <thead style="background-color: #f2f2f2;" class="text-center">
+                                    <tr>
+                                        <th style="width: 15%;">Năm cấp</th>
+                                        <th style="width: 50%;">Tên văn bằng SHTT / Sáng chế</th>
+                                        <th style="width: 35%;">Số bằng / Cơ quan cấp</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-set="ips" t-value="o.resume_line_ids.filtered(lambda l: l.type == 'ip')"/>
+                                    <t t-if="ips">
+                                        <tr t-foreach="ips" t-as="ip">
+                                            <td class="text-center"><span t-field="ip.period"/></td>
+                                            <td><strong><span t-field="ip.name"/></strong></td>
+                                            <td><span t-field="ip.result"/> - <span t-field="ip.institution"/></td>
+                                        </tr>
+                                    </t>
+                                    <t t-else="">
+                                        <tr><td colspan="3" class="text-center fst-italic">Chưa có văn bằng bảo hộ SHTT</td></tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- X. GIẢI THƯỞNG KHOA HỌC CÔNG NGHỆ -->
+                        <div class="mb-3">
+                            <h5 class="fw-bold text-uppercase" style="font-size: 13pt; border-bottom: 1px solid #000; padding-bottom: 3px;">
+                                X. GIẢI THƯỞNG KHOA HỌC &amp; CÔNG NGHỆ
+                            </h5>
+                            <table class="table table-bordered table-sm" style="font-size: 11pt; border-color: #333;">
+                                <thead style="background-color: #f2f2f2;" class="text-center">
+                                    <tr>
+                                        <th style="width: 15%;">Năm</th>
+                                        <th style="width: 50%;">Tên giải thưởng / Hình thức khen thưởng</th>
+                                        <th style="width: 35%;">Cơ quan trao tặng</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-set="awards" t-value="o.resume_line_ids.filtered(lambda l: l.type == 'award')"/>
+                                    <t t-if="awards">
+                                        <tr t-foreach="awards" t-as="aw">
+                                            <td class="text-center"><span t-field="aw.period"/></td>
+                                            <td><strong><span t-field="aw.name"/></strong></td>
+                                            <td><span t-field="aw.institution"/></td>
+                                        </tr>
+                                    </t>
+                                    <t t-else="">
+                                        <tr><td colspan="3" class="text-center fst-italic">Chưa có giải thưởng</td></tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- XI - XIV. THÀNH TỰU KHÁC -->
+                        <div class="mb-3" t-if="o.practical_applications or o.postgraduate_supervision or o.other_achievements">
+                            <h5 class="fw-bold text-uppercase" style="font-size: 13pt; border-bottom: 1px solid #000; padding-bottom: 3px;">
+                                XI. THÀNH TỰU KHÁC &amp; HƯỚNG DẪN SAU ĐẠI HỌC
+                            </h5>
+                            <t t-if="o.practical_applications">
+                                <p class="mb-1" style="font-size: 12pt;"><strong>Ứng dụng thực tiễn:</strong> <span t-field="o.practical_applications"/></p>
+                            </t>
+                            <t t-if="o.postgraduate_supervision">
+                                <p class="mb-1" style="font-size: 12pt;"><strong>Hướng dẫn sau đại học:</strong> <span t-field="o.postgraduate_supervision"/></p>
+                            </t>
+                            <t t-if="o.other_achievements">
+                                <p class="mb-1" style="font-size: 12pt;"><strong>Thành tựu khác:</strong> <span t-field="o.other_achievements"/></p>
+                            </t>
+                        </div>
+
+                        <!-- XV. LỜI CAM ĐOAN -->
+                        <div class="mb-4">
+                            <h5 class="fw-bold text-uppercase" style="font-size: 13pt; border-bottom: 1px solid #000; padding-bottom: 3px;">
+                                XII. LỜI CAM ĐOAN
+                            </h5>
+                            <p style="font-size: 12pt; text-align: justify; font-style: italic;">
+                                <span t-field="o.commitment_statement"/>
+                            </p>
+                        </div>
+
+                        <!-- CHỮ KÝ VÀ XÁC NHẬN -->
+                        <div class="row mt-4" style="page-break-inside: avoid;">
+                            <div class="col-6 text-center">
+                                <h6 class="fw-bold text-uppercase mb-1" style="font-size: 12pt;">XÁC NHẬN CỦA ĐẠI DIỆN LÃNH ĐẠO KHOA</h6>
+                                <p class="fst-italic mb-5" style="font-size: 11pt;">(Ký, ghi rõ họ tên và đóng dấu)</p>
+                                <div style="height: 70px;"></div>
+                                <p class="fw-bold text-uppercase" style="font-size: 12pt;">TRƯỞNG KHOA ĐÀO TẠO</p>
+                            </div>
+                            <div class="col-6 text-center">
+                                <p class="fst-italic mb-1" style="font-size: 12pt;">
+                                    Ngày ..... tháng ..... năm 20....
+                                </p>
+                                <h6 class="fw-bold text-uppercase mb-1" style="font-size: 12pt;">CÁ NHÂN GIẢNG VIÊN LẬP</h6>
+                                <p class="fst-italic mb-2" style="font-size: 11pt;">(Ký và ghi rõ họ tên)</p>
+                                <div style="height: 70px;">
+                                    <t t-if="o.signature_image">
+                                        <img t-att-src="image_data_uri(o.signature_image)" style="max-height: 60px; max-width: 150px;"/>
+                                    </t>
+                                </div>
+                                <p class="fw-bold text-uppercase" style="font-size: 12pt;"><span t-field="o.name"/></p>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

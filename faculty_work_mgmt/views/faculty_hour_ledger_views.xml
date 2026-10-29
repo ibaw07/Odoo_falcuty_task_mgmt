@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Search View -->
+    <record id="view_faculty_hour_ledger_search" model="ir.ui.view">
+        <field name="name">faculty.hour.ledger.search</field>
+        <field name="model">faculty.hour.ledger</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm Sổ cái Giờ chuẩn">
+                <field name="lecturer_id" string="Giảng viên"/>
+                <field name="name" string="Nội dung nhiệm vụ"/>
+                <field name="academic_year_id" string="Năm học"/>
+                <field name="semester_id" string="Học kỳ"/>
+
+                <filter string="1. Giảng dạy" name="filter_teaching" domain="[('category', '=', 'teaching')]"/>
+                <filter string="2. Nghiên cứu khoa học" name="filter_research" domain="[('category', '=', 'research')]"/>
+                <filter string="3. Hoạt động khác" name="filter_other" domain="[('category', '=', 'other')]"/>
+                <separator/>
+                <filter string="Chưa khóa sổ" name="filter_unlocked" domain="[('is_locked', '=', False)]"/>
+                <filter string="Đã khóa sổ" name="filter_locked" domain="[('is_locked', '=', True)]"/>
+
+                <group expand="0" string="Gom nhóm theo">
+                    <filter string="Giảng viên" name="group_lecturer" context="{'group_by': 'lecturer_id'}"/>
+                    <filter string="Nhóm tiêu chí" name="group_category" context="{'group_by': 'category'}"/>
+                    <filter string="Loại nhiệm vụ" name="group_activity_type" context="{'group_by': 'activity_type'}"/>
+                    <filter string="Năm học" name="group_academic_year" context="{'group_by': 'academic_year_id'}"/>
+                    <filter string="Học kỳ" name="group_semester" context="{'group_by': 'semester_id'}"/>
+                    <filter string="Ngày thực hiện" name="group_date" context="{'group_by': 'date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- List View -->
+    <record id="view_faculty_hour_ledger_list" model="ir.ui.view">
+        <field name="name">faculty.hour.ledger.list</field>
+        <field name="model">faculty.hour.ledger</field>
+        <field name="arch" type="xml">
+            <list string="Sổ cái Giờ chuẩn Trung tâm" decoration-muted="is_locked">
+                <field name="date"/>
+                <field name="lecturer_id"/>
+                <field name="academic_year_id"/>
+                <field name="semester_id"/>
+                <field name="category" widget="badge"
+                       decoration-info="category == 'teaching'"
+                       decoration-success="category == 'research'"
+                       decoration-warning="category == 'other'"/>
+                <field name="activity_type"/>
+                <field name="name"/>
+                <field name="raw_hours" optional="hide"/>
+                <field name="coefficient" optional="hide"/>
+                <field name="standard_hours" sum="Tổng Giờ chuẩn"/>
+                <field name="is_locked" widget="boolean_toggle" groups="faculty_work_mgmt.group_faculty_dean"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_faculty_hour_ledger_form" model="ir.ui.view">
+        <field name="name">faculty.hour.ledger.form</field>
+        <field name="model">faculty.hour.ledger</field>
+        <field name="arch" type="xml">
+            <form string="Dòng Sổ cái Giờ chuẩn">
+                <header>
+                    <button name="action_unlock_year_ledger" string="Mở khóa dòng sổ" type="object" class="btn-warning"
+                            invisible="not is_locked" groups="faculty_work_mgmt.group_faculty_dean"/>
+                    <field name="is_locked" widget="badge" decoration-danger="is_locked" decoration-success="not is_locked"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Thông tin Đối tượng &amp; Thời gian">
+                            <field name="lecturer_id" readonly="is_locked"/>
+                            <field name="academic_year_id" readonly="is_locked"/>
+                            <field name="semester_id" readonly="is_locked"/>
+                            <field name="date" readonly="is_locked"/>
+                        </group>
+                        <group string="Phân loại Tiêu chí &amp; Giờ chuẩn">
+                            <field name="category" readonly="is_locked"/>
+                            <field name="activity_type" readonly="is_locked"/>
+                            <field name="raw_hours" readonly="is_locked"/>
+                            <field name="coefficient" readonly="is_locked"/>
+                            <field name="standard_hours" readonly="is_locked"/>
+                        </group>
+                    </group>
+                    <group string="Chi tiết Nhiệm vụ">
+                        <field name="name" placeholder="Mô tả cụ thể buổi giảng, đề tài, bài báo hoặc hoạt động..." readonly="is_locked"/>
+                        <field name="notes" placeholder="Ghi chú thêm..." readonly="is_locked"/>
+                    </group>
+                    <group string="Truy vết Nguồn gốc Phát sinh" groups="base.group_no_one">
+                        <field name="res_model" readonly="1"/>
+                        <field name="res_id" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_faculty_hour_ledger" model="ir.actions.act_window">
+        <field name="name">Sổ cái Giờ chuẩn Trung tâm</field>
+        <field name="res_model">faculty.hour.ledger</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_group_academic_year': 1, 'search_default_group_category': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Sổ cái Giờ chuẩn là trung tâm quản lý giờ của toàn bộ Giảng dạy, NCKH và Hoạt động khác.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menuitem -->
+    <menuitem id="menu_faculty_hour_ledger_item"
+              name="Sổ cái Giờ chuẩn"
+              parent="faculty_work_mgmt.menu_faculty_hour_ledger_root"
+              action="action_faculty_hour_ledger"
+              sequence="10"/>
+</odoo>

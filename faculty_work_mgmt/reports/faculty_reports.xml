@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Báo cáo QWeb PDF: Lý lịch Khoa học 15 mục -->
+    <record id="action_report_faculty_lecturer_llkh" model="ir.actions.report">
+        <field name="name">Lý lịch Khoa học (15 Mục chuẩn)</field>
+        <field name="model">faculty.lecturer</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">faculty_work_mgmt.report_faculty_lecturer_llkh</field>
+        <field name="report_file">faculty_work_mgmt.report_faculty_lecturer_llkh</field>
+        <field name="print_report_name">'LLKH_' + (object.lecturer_code or 'GV') + '_' + (object.name or 'Lecturer')</field>
+        <field name="binding_model_id" ref="model_faculty_lecturer"/>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>

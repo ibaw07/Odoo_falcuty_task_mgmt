@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Root Menu: Khoa Đào tạo -->
+    <menuitem id="menu_faculty_root"
+              name="Khoa Đào tạo"
+              sequence="10"/>
+
+    <!-- Top Submenu: Giảng viên & Nhân sự -->
+    <menuitem id="menu_faculty_lecturer_root"
+              name="Giảng viên"
+              parent="menu_faculty_root"
+              sequence="10"/>
+
+    <!-- Top Submenu: Sổ cái & Giờ chuẩn -->
+    <menuitem id="menu_faculty_hour_ledger_root"
+              name="Sổ cái Giờ chuẩn"
+              parent="menu_faculty_root"
+              sequence="20"/>
+
+    <!-- Top Submenu: Cấu hình Khoa -->
+    <menuitem id="menu_faculty_config_root"
+              name="Cấu hình Khoa"
+              parent="menu_faculty_root"
+              sequence="90"
+              groups="faculty_work_mgmt.group_faculty_dean"/>
+</odoo>

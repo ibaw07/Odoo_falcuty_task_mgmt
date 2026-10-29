@@ -1,0 +1,484 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- =================================================================== -->
+    <!-- 1. NĂM HỌC & HỌC KỲ                                                 -->
+    <!-- =================================================================== -->
+    <record id="view_faculty_academic_year_list" model="ir.ui.view">
+        <field name="name">faculty.academic.year.list</field>
+        <field name="model">faculty.academic.year</field>
+        <field name="arch" type="xml">
+            <list string="Danh sách Năm học" decoration-info="is_current" decoration-muted="state == 'closed'">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="is_current" widget="boolean_toggle"/>
+                <field name="state" widget="badge" decoration-success="state == 'active'" decoration-warning="state == 'draft'" decoration-danger="state == 'closed'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_faculty_academic_year_form" model="ir.ui.view">
+        <field name="name">faculty.academic.year.form</field>
+        <field name="model">faculty.academic.year</field>
+        <field name="arch" type="xml">
+            <form string="Năm học">
+                <header>
+                    <button name="action_back_to_list" string="Quay lại danh sách" type="object" class="btn-secondary" icon="fa-arrow-left"/>
+                    <button name="action_close_year" string="Khóa sổ Năm học" type="object" class="btn-danger" invisible="state == 'closed'" confirm="Bạn có chắc chắn muốn khóa sổ năm học này? Tất cả các dòng sổ cái giờ chuẩn sẽ bị khóa cứng!"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,active,closed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Tên năm học"/>
+                        <h1>
+                            <field name="name" placeholder="VD: 2025 - 2026"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Thời gian chu kỳ chuẩn">
+                            <field name="code"/>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                        </group>
+                        <group string="Thiết lập trạng thái">
+                            <field name="is_current" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Danh sách Học kỳ" name="semesters">
+                            <field name="semester_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="code"/>
+                                    <field name="name"/>
+                                    <field name="date_start"/>
+                                    <field name="date_end"/>
+                                    <field name="is_current" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Ghi chú" name="notes">
+                            <field name="notes" placeholder="Ghi chú thêm về năm học..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_faculty_academic_year" model="ir.actions.act_window">
+        <field name="name">Năm học &amp; Học kỳ</field>
+        <field name="res_model">faculty.academic.year</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Tạo năm học mới theo chu kỳ chuẩn từ 01/08 đến 31/07.
+            </p>
+        </field>
+    </record>
+
+    <!-- =================================================================== -->
+    <!-- 2. 16 BẬC LƯƠNG & NIÊN HẠN                                         -->
+    <!-- =================================================================== -->
+    <record id="view_faculty_rank_config_list" model="ir.ui.view">
+        <field name="name">faculty.rank.config.list</field>
+        <field name="model">faculty.rank.config</field>
+        <field name="arch" type="xml">
+            <list string="16 Bậc lương &amp; Niên hạn" editable="bottom">
+                <field name="sequence"/>
+                <field name="name"/>
+                <field name="salary_coefficient"/>
+                <field name="promotion_interval_months"/>
+                <field name="notes"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_faculty_rank_config" model="ir.actions.act_window">
+        <field name="name">16 Bậc lương &amp; Niên hạn</field>
+        <field name="res_model">faculty.rank.config</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Cấu hình 16 bậc lương giảng viên với niên hạn nâng bậc chuẩn (mặc định 36 tháng).
+            </p>
+        </field>
+    </record>
+
+    <!-- =================================================================== -->
+    <!-- 3. ĐỊNH MỨC CHỨC DANH & MIỄN GIẢM                                   -->
+    <!-- =================================================================== -->
+    <record id="view_faculty_title_norm_list" model="ir.ui.view">
+        <field name="name">faculty.title.norm.list</field>
+        <field name="model">faculty.title.norm</field>
+        <field name="arch" type="xml">
+            <list string="Định mức Tiêu chuẩn theo Chức danh">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="academic_title"/>
+                <field name="academic_degree"/>
+                <field name="teaching_norm"/>
+                <field name="research_norm"/>
+                <field name="other_norm"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_faculty_title_norm_form" model="ir.ui.view">
+        <field name="name">faculty.title.norm.form</field>
+        <field name="model">faculty.title.norm</field>
+        <field name="arch" type="xml">
+            <form string="Định mức chức danh">
+                <header>
+                    <button name="action_back_to_list" string="Quay lại danh sách" type="object" class="btn-secondary" icon="fa-arrow-left"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Chức danh / Vị trí"/>
+                        <h1>
+                            <field name="name" placeholder="VD: Giảng viên, Giảng viên chính, Giáo sư..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Phân loại">
+                            <field name="code"/>
+                            <field name="academic_title"/>
+                            <field name="academic_degree"/>
+                        </group>
+                        <group string="Định mức 3 Tiêu chí chuẩn hàng năm">
+                            <field name="teaching_norm"/>
+                            <field name="research_norm"/>
+                            <field name="other_norm"/>
+                        </group>
+                    </group>
+                    <group string="Căn cứ pháp lý &amp; Ghi chú">
+                        <field name="notes" placeholder="Căn cứ Thông tư 20/2020/TT-BGDĐT..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_faculty_title_norm" model="ir.actions.act_window">
+        <field name="name">Định mức chức danh &amp; Miễn giảm</field>
+        <field name="res_model">faculty.title.norm</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Miễn giảm định mức List View -->
+    <record id="view_faculty_norm_reduction_list" model="ir.ui.view">
+        <field name="name">faculty.norm.reduction.list</field>
+        <field name="model">faculty.norm.reduction</field>
+        <field name="arch" type="xml">
+            <list string="Quy định Miễn giảm Định mức" editable="bottom">
+                <field name="name"/>
+                <field name="reduction_type"/>
+                <field name="position_title"/>
+                <field name="percent_teaching"/>
+                <field name="percent_research"/>
+                <field name="percent_other"/>
+                <field name="study_weeks"/>
+                <field name="notes"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- =================================================================== -->
+    <!-- 4. QUY CHUẨN GIỜ CHUẨN ĐỘNG & QUY TẮC KHẢO THÍ                     -->
+    <!-- =================================================================== -->
+    <record id="view_faculty_norm_config_list" model="ir.ui.view">
+        <field name="name">faculty.norm.config.list</field>
+        <field name="model">faculty.norm.config</field>
+        <field name="arch" type="xml">
+            <list string="Bảng Quy chuẩn Giờ chuẩn">
+                <field name="name"/>
+                <field name="academic_year_id"/>
+                <field name="large_class_threshold"/>
+                <field name="large_class_coeff"/>
+                <field name="proctoring_rate"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_faculty_norm_config_form" model="ir.ui.view">
+        <field name="name">faculty.norm.config.form</field>
+        <field name="model">faculty.norm.config</field>
+        <field name="arch" type="xml">
+            <form string="Bảng Quy chuẩn Giờ chuẩn Động">
+                <header>
+                    <button name="action_back_to_list" string="Quay lại danh sách" type="object" class="btn-secondary" icon="fa-arrow-left"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Tên bảng quy chuẩn"/>
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Phạm vi áp dụng">
+                            <field name="academic_year_id"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                        <group string="Hệ số Lớp đông">
+                            <field name="large_class_threshold"/>
+                            <field name="large_class_coeff"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Đơn giá Khảo thí &amp; Chấm thi" name="exam_rates">
+                            <group>
+                                <group string="Coi thi &amp; Chấm Tự luận / Trắc nghiệm">
+                                    <field name="proctoring_rate"/>
+                                    <field name="grading_rate_essay"/>
+                                    <field name="grading_rate_multiple_choice"/>
+                                </group>
+                                <group string="Chấm Tiểu luận &amp; Vấn đáp">
+                                    <field name="grading_rate_report"/>
+                                    <field name="grading_rate_oral"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Định mức Ra đề thi mới" name="exam_creation_norms">
+                            <group>
+                                <group string="Quy chuẩn tính giờ Ra đề">
+                                    <field name="exam_creation_essay_norm"/>
+                                    <field name="exam_creation_oral_norm"/>
+                                    <field name="exam_creation_report_norm"/>
+                                </group>
+                                <group string="Ghi chú">
+                                    <field name="notes" placeholder="Chỉ tính giờ ra đề khi chọn nguồn 'Ra đề mới'..."/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_faculty_norm_config" model="ir.actions.act_window">
+        <field name="name">Bảng quy chuẩn Giờ chuẩn động</field>
+        <field name="res_model">faculty.norm.config</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Quy tắc chấm kiểm tra khảo thí động -->
+    <record id="view_faculty_exam_grading_rule_list" model="ir.ui.view">
+        <field name="name">faculty.exam.grading.rule.list</field>
+        <field name="model">faculty.exam.grading.rule</field>
+        <field name="arch" type="xml">
+            <list string="Quy tắc Chấm kiểm tra động" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="min_students"/>
+                <field name="max_students"/>
+                <field name="audit_type"/>
+                <field name="audit_value"/>
+                <field name="name"/>
+                <field name="notes"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_faculty_exam_grading_rule" model="ir.actions.act_window">
+        <field name="name">Quy tắc Chấm kiểm tra động</field>
+        <field name="res_model">faculty.exam.grading.rule</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <!-- =================================================================== -->
+    <!-- 5. QUY ĐỊNH THANH TOÁN (List view 4 cột chuẩn)                      -->
+    <!-- =================================================================== -->
+    <record id="view_faculty_payment_regulation_list" model="ir.ui.view">
+        <field name="name">faculty.payment.regulation.list</field>
+        <field name="model">faculty.payment.regulation</field>
+        <field name="arch" type="xml">
+            <list string="Quy định Thanh toán">
+                <!-- ĐÚNG 4 CỘT: STT | Loại thanh toán | Căn cứ (Số văn bản - Ngày) | Ghi chú -->
+                <field name="sequence" widget="handle" string="STT"/>
+                <field name="name" string="Loại thanh toán"/>
+                <field name="basis_display" string="Căn cứ (Số văn bản - Ngày ban hành)"/>
+                <field name="notes" string="Ghi chú"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_faculty_payment_regulation_form" model="ir.ui.view">
+        <field name="name">faculty.payment.regulation.form</field>
+        <field name="model">faculty.payment.regulation</field>
+        <field name="arch" type="xml">
+            <form string="Quy định Thanh toán">
+                <header>
+                    <button name="action_back_to_list" string="Quay lại danh sách" type="object" class="btn-secondary" icon="fa-arrow-left"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Tên hoạt động / Loại thanh toán"/>
+                        <h1>
+                            <field name="name" placeholder="VD: Quy định Thanh toán Mời giảng, Báo cáo viên thực tế..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Căn cứ pháp lý">
+                            <field name="payment_category"/>
+                            <field name="document_number"/>
+                            <field name="document_date"/>
+                        </group>
+                        <group string="Tài liệu văn bản đính kèm">
+                            <field name="attachment_filename" invisible="1"/>
+                            <field name="attachment_file" filename="attachment_filename" widget="binary" string="File đính kèm văn bản"/>
+                            <field name="notes" placeholder="Ghi chú thêm về quy định thanh toán..."/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Các mục chi / Định mức đơn giá áp dụng" name="payment_lines">
+                            <field name="line_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle" string="STT"/>
+                                    <field name="name" string="Tên mục chi"/>
+                                    <field name="unit" string="Đơn vị tính"/>
+                                    <field name="standard_rate" string="Định mức / Đơn giá (VNĐ)"/>
+                                    <field name="formula_desc" string="Công thức tính / Căn cứ"/>
+                                    <field name="notes" string="Ghi chú"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_faculty_payment_regulation" model="ir.actions.act_window">
+        <field name="name">Quy định Thanh toán</field>
+        <field name="res_model">faculty.payment.regulation</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- =================================================================== -->
+    <!-- 6. QUY TRÌNH & BIỂU MẪU KHOA                                       -->
+    <!-- =================================================================== -->
+    <record id="view_faculty_workflow_process_list" model="ir.ui.view">
+        <field name="name">faculty.workflow.process.list</field>
+        <field name="model">faculty.workflow.process</field>
+        <field name="arch" type="xml">
+            <list string="Quy trình &amp; Biểu mẫu Khoa">
+                <field name="sequence" widget="handle"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="category"/>
+                <field name="version"/>
+                <field name="effective_date"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-warning="state == 'waiting_dean'" decoration-success="state == 'approved'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_faculty_workflow_process_form" model="ir.ui.view">
+        <field name="name">faculty.workflow.process.form</field>
+        <field name="model">faculty.workflow.process</field>
+        <field name="arch" type="xml">
+            <form string="Quy trình &amp; Biểu mẫu">
+                <header>
+                    <button name="action_back_to_list" string="Quay lại danh sách" type="object" class="btn-secondary" icon="fa-arrow-left"/>
+                    <button name="action_submit" string="Gửi duyệt" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Phê duyệt ban hành" type="object" class="btn-success" invisible="state != 'waiting_dean'" groups="faculty_work_mgmt.group_faculty_dean"/>
+                    <button name="action_reset_draft" string="Chuyển về Dự thảo" type="object" invisible="state == 'draft'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,waiting_dean,approved"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Tên quy trình / Quy định"/>
+                        <h1>
+                            <field name="name" placeholder="VD: Quy trình Tổ chức thi và Chấm thi kết thúc học phần"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Thông tin quy định">
+                            <field name="code"/>
+                            <field name="category"/>
+                            <field name="version"/>
+                            <field name="effective_date"/>
+                        </group>
+                        <group string="Văn bản quy định đính kèm (Word/PDF)">
+                            <field name="attachment_filename" invisible="1"/>
+                            <field name="attachment_file" filename="attachment_filename" widget="binary" string="File quy định (Word/PDF)"/>
+                            <field name="notes" placeholder="Ghi chú về phiên bản cập nhật..."/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Chuỗi các bước quy trình &amp; Biểu mẫu kèm theo" name="steps">
+                            <field name="step_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle" string="Bước"/>
+                                    <field name="name" string="Nội dung bước công việc"/>
+                                    <field name="form_template_name" string="Tên biểu mẫu / Mẫu báo cáo"/>
+                                    <field name="attachment_template_filename" invisible="1"/>
+                                    <field name="attachment_template" filename="attachment_template_filename" widget="binary" string="File mẫu"/>
+                                    <field name="responsible_role" string="Vai trò thực hiện"/>
+                                    <field name="notes" string="Ghi chú yêu cầu"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_faculty_workflow_process" model="ir.actions.act_window">
+        <field name="name">Quy trình &amp; Biểu mẫu Khoa</field>
+        <field name="res_model">faculty.workflow.process</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- =================================================================== -->
+    <!-- MENU ITEMS FOR CONFIGURATION                                       -->
+    <!-- =================================================================== -->
+    <menuitem id="menu_faculty_academic_year"
+              name="Năm học &amp; Học kỳ"
+              parent="faculty_work_mgmt.menu_faculty_config_root"
+              action="action_faculty_academic_year"
+              sequence="10"/>
+
+    <menuitem id="menu_faculty_rank_config"
+              name="16 Bậc lương &amp; Niên hạn"
+              parent="faculty_work_mgmt.menu_faculty_config_root"
+              action="action_faculty_rank_config"
+              sequence="20"/>
+
+    <menuitem id="menu_faculty_title_norm"
+              name="Định mức chức danh &amp; Miễn giảm"
+              parent="faculty_work_mgmt.menu_faculty_config_root"
+              action="action_faculty_title_norm"
+              sequence="30"/>
+
+    <menuitem id="menu_faculty_norm_config"
+              name="Bảng quy chuẩn Giờ chuẩn động"
+              parent="faculty_work_mgmt.menu_faculty_config_root"
+              action="action_faculty_norm_config"
+              sequence="40"/>
+
+    <menuitem id="menu_faculty_exam_grading_rule"
+              name="Quy tắc Chấm kiểm tra động"
+              parent="faculty_work_mgmt.menu_faculty_config_root"
+              action="action_faculty_exam_grading_rule"
+              sequence="50"/>
+
+    <menuitem id="menu_faculty_payment_regulation"
+              name="Quy định Thanh toán"
+              parent="faculty_work_mgmt.menu_faculty_config_root"
+              action="action_faculty_payment_regulation"
+              sequence="60"/>
+
+    <menuitem id="menu_faculty_workflow_process"
+              name="Quy trình &amp; Biểu mẫu Khoa"
+              parent="faculty_work_mgmt.menu_faculty_config_root"
+              action="action_faculty_workflow_process"
+              sequence="70"/>
+</odoo>

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <!-- Phân loại nhóm quyền Khoa Đào tạo -->
+        <record id="module_category_faculty_mgmt" model="ir.module.category">
+            <field name="name">Quản lý Khoa Đào tạo</field>
+            <field name="description">Phân quyền chức vụ và nghiệp vụ trong Khoa Đào tạo Đại học</field>
+            <field name="sequence">10</field>
+        </record>
+
+        <!-- 1. Giảng viên / Cán bộ nhân viên -->
+        <record id="group_faculty_user" model="res.groups">
+            <field name="name">Giảng viên / Cán bộ nhân viên</field>
+            <field name="category_id" ref="module_category_faculty_mgmt"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+            <field name="comment">Quyền cơ bản của giảng viên: Tra cứu thông tin, xem hồ sơ cá nhân và sổ cái giờ của mình.</field>
+        </record>
+
+        <!-- 2. Quản lý Đào tạo / Giáo vụ -->
+        <record id="group_faculty_training" model="res.groups">
+            <field name="name">Quản lý Đào tạo / Giáo vụ</field>
+            <field name="category_id" ref="module_category_faculty_mgmt"/>
+            <field name="implied_ids" eval="[(4, ref('group_faculty_user'))]"/>
+            <field name="comment">Quyền quản lý chương trình đào tạo, học phần, đề cương chi tiết và danh sách lớp.</field>
+        </record>
+
+        <!-- 3. Quản lý Khảo thí -->
+        <record id="group_faculty_exam" model="res.groups">
+            <field name="name">Quản lý Khảo thí</field>
+            <field name="category_id" ref="module_category_faculty_mgmt"/>
+            <field name="implied_ids" eval="[(4, ref('group_faculty_user'))]"/>
+            <field name="comment">Quyền nhập lịch thi, phân công coi thi, chấm thi và thẩm định chấm kiểm tra.</field>
+        </record>
+
+        <!-- 4. Quản lý Nghiên cứu khoa học -->
+        <record id="group_faculty_research" model="res.groups">
+            <field name="name">Quản lý Nghiên cứu Khoa học</field>
+            <field name="category_id" ref="module_category_faculty_mgmt"/>
+            <field name="implied_ids" eval="[(4, ref('group_faculty_user'))]"/>
+            <field name="comment">Quyền quản lý đề tài, bài báo, xuất bản và tổ chức hội thảo khoa học.</field>
+        </record>
+
+        <!-- 5. Ban Chủ nhiệm Khoa / Trưởng Khoa -->
+        <record id="group_faculty_dean" model="res.groups">
+            <field name="name">Ban Chủ nhiệm Khoa / Trưởng Khoa</field>
+            <field name="category_id" ref="module_category_faculty_mgmt"/>
+            <field name="implied_ids" eval="[(4, ref('group_faculty_training')), (4, ref('group_faculty_exam')), (4, ref('group_faculty_research'))]"/>
+            <field name="users" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+            <field name="comment">Quyền quản trị toàn diện: Duyệt kế hoạch, phân công chức năng, quản lý nhân sự, chốt sổ cái cuối năm và thiết lập cấu hình Khoa.</field>
+        </record>
+    </data>
+
+    <data noupdate="1">
+        <!-- Record Rules: Phân quyền dữ liệu theo người dùng -->
+        <record id="rule_faculty_lecturer_user" model="ir.rule">
+            <field name="name">Giảng viên: Xem toàn bộ danh sách, cập nhật hồ sơ cá nhân</field>
+            <field name="model_id" ref="model_faculty_lecturer"/>
+            <field name="groups" eval="[(4, ref('group_faculty_user'))]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="rule_faculty_lecturer_dean" model="ir.rule">
+            <field name="name">Lãnh đạo Khoa: Toàn quyền hồ sơ giảng viên</field>
+            <field name="model_id" ref="model_faculty_lecturer"/>
+            <field name="groups" eval="[(4, ref('group_faculty_dean'))]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <record id="rule_faculty_hour_ledger_user" model="ir.rule">
+            <field name="name">Giảng viên: Xem dòng sổ cái giờ chuẩn</field>
+            <field name="model_id" ref="model_faculty_hour_ledger"/>
+            <field name="groups" eval="[(4, ref('group_faculty_user'))]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="rule_faculty_hour_ledger_dean" model="ir.rule">
+            <field name="name">Lãnh đạo Khoa: Quản trị sổ cái giờ chuẩn</field>
+            <field name="model_id" ref="model_faculty_hour_ledger"/>
+            <field name="groups" eval="[(4, ref('group_faculty_dean'))]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+    </data>
+</odoo>
