@@ -3,7 +3,7 @@
 """
 
 from odoo import api, fields, models
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 class FacultyScheduleSuggestionWizard(models.TransientModel):
@@ -26,42 +26,41 @@ class FacultyScheduleSuggestionWizard(models.TransientModel):
 
     def action_find_free_slots(self):
         """Tìm các buổi sáng/chiều mà giảng viên của môn học hoàn toàn trống trong khoảng ngày.
-        Kết quả được lưu vào `suggestion_line_ids` và trả về view dạng tree.
+        Kết quả được lưu vào `suggestion_line_ids` và trả về view dạng list.
         """
         self.suggestion_line_ids.unlink()
-        # Lấy danh sách giảng viên thuộc môn học (giả sử có trường many2many `teacher_ids` trên faculty.course)
-        teachers = self.course_id.teacher_ids
-        # Tìm các buổi học và thi trong khoảng thời gian
+        teachers = self.course_id.teacher_ids if hasattr(self.course_id, 'teacher_ids') else self.env['res.users']
         Session = self.env["faculty.teaching.session"]
         Exam = self.env["faculty.exam.assignment"]
-        sessions = Session.search(["&", ("date", ">=", self.date_from), ("date", "<=", self.date_to)])
-        exams = Exam.search(["&", ("date", ">=", self.date_from), ("date", "<=", self.date_to)])
-        # Tạo dictionary {teacher_id: set of occupied datetime (date + period)}
+        sessions = Session.search([("date", ">=", self.date_from), ("date", "<=", self.date_to)])
+        exams = Exam.search([("date", ">=", self.date_from), ("date", "<=", self.date_to)])
         occupied = {t.id: set() for t in teachers}
         for rec in sessions:
-            for t in rec.teacher_ids:
-                occupied[t.id].add((rec.date, rec.period))  # period expected field 'period' (Sáng/Chiều)
+            if hasattr(rec, 'teacher_ids'):
+                for t in rec.teacher_ids:
+                    occupied.setdefault(t.id, set()).add((rec.date, getattr(rec, 'period', 'Sáng')))
         for rec in exams:
-            for t in rec.teacher_ids:
-                occupied[t.id].add((rec.date, rec.period))
-        # Xác định các slot trống (giả sử ngày có 2 period: 'Sáng', 'Chiều')
+            if hasattr(rec, 'teacher_ids'):
+                for t in rec.teacher_ids:
+                    occupied.setdefault(t.id, set()).add((rec.date, getattr(rec, 'period', 'Sáng')))
         free_lines = []
-        for single_date in fields.Date.range(self.date_from, self.date_to):
+        cur_date = self.date_from
+        while cur_date <= self.date_to:
             for period in ("Sáng", "Chiều"):
                 for teacher in teachers:
-                    if (single_date, period) not in occupied.get(teacher.id, set()):
+                    if (cur_date, period) not in occupied.get(teacher.id, set()):
                         free_lines.append((0, 0, {
                             "teacher_id": teacher.id,
-                            "date": single_date,
+                            "date": cur_date,
                             "period": period,
                         }))
+            cur_date += timedelta(days=1)
         self.suggestion_line_ids = free_lines
-        # Trả về action hiển thị tree view
         return {
             "type": "ir.actions.act_window",
             "name": "Kết quả gợi ý lịch trống",
             "res_model": "faculty.schedule.suggestion.line",
-            "view_mode": "tree,form",
+            "view_mode": "list,form",
             "target": "current",
             "domain": [("wizard_id", "=", self.id)],
         }
@@ -94,7 +93,7 @@ class FacultyExamReportWizard(models.TransientModel):
         required=True,
     )
     semester_id = fields.Many2one(
-        "faculty.semester",
+        "faculty.academic.semester",
         string="Học kỳ",
         required=True,
     )

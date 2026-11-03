@@ -1,65 +1,101 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <!-- QWeb template for exam semester report -->
-    <template id="faculty_exam_semester_report_template" inherit_id="web.external_layout" name="Faculty Exam Semester Report">
+    <template id="faculty_exam_semester_report_template">
         <t t-call="web.html_container">
-            <t t-set="company" t-value="env.company"/>
-            <div class="page">
-                <div class="header">
-                    <table class="table" style="width:100%;">
-                        <tr>
-                            <td style="width:20%;"><img src="/web/image/${company.logo}" class="img" style="max-height:80px;"/></td>
-                            <td style="text-align:center;">
-                                <h2>TRƯỜNG ĐẠI HỌC ...</h2>
-                                <h3>KHOA ...</h3>
-                                <h4>BÁO CÁO CÔI THI, CHẤM THI THEO LỚP VÀ HỌC PHẦN</h4>
-                            </td>
-                            <td style="width:20%;"/>
-                        </tr>
-                    </table>
-                </div>
-                <div class="footer" style="position: absolute; bottom: 0; width:100%;">
-                    <table class="table" style="width:100%;">
-                        <tr>
-                            <td style="text-align:left;">Tên người lập biểu: <span t-field="user.name"/></td>
-                            <td style="text-align:right;">Giáo vụ: ___________________   Trưởng khoa: ___________________</td>
-                        </tr>
-                    </table>
-                </div>
-                <div class="content" style="margin-top: 30px;">
-                    <t t-set="data" t-value="report_data"/>
-                    <table class="table table-sm" style="width:100%; border-collapse: collapse;" border="1">
-                        <thead>
-                            <tr style="background:#f0f0f0;">
-                                <th style="width:5%;">STT</th>
-                                <th style="width:15%;">Tên Lớp</th>
-                                <th style="width:15%;">Tên Học phần</th>
-                                <th style="width:10%;">Hình thức thi</th>
-                                <th style="width:10%;">Ngày thi</th>
-                                <th style="width:30%;">Giảng viên tham gia &amp; Hoạt động (Ra đề / Coi thi / Chấm thi / Chấm kiểm tra)</th>
-                                <th style="width:15%;">Ghi chú</th>
+            <t t-call="web.external_layout">
+                <div class="page" style="font-family: 'Times New Roman', Times, serif; font-size: 12pt;">
+                    <div class="header text-center mb-4">
+                        <table class="table table-borderless" style="width: 100%;">
+                            <tr>
+                                <td style="width: 25%; text-align: left; vertical-align: top;">
+                                    <div style="font-size: 11pt; font-weight: bold;">TRƯỜNG ĐẠI HỌC ...</div>
+                                    <div style="font-size: 11pt; font-weight: bold;">KHOA ĐÀO TẠO</div>
+                                </td>
+                                <td style="text-align: center; vertical-align: top;">
+                                    <div style="font-size: 11pt; font-weight: bold; text-transform: uppercase;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                                    <div style="font-size: 11pt; font-weight: bold;">Độc lập – Tự do – Hạnh phúc</div>
+                                    <div style="border-top: 1px solid #000; width: 50%; margin: 4px auto 12px auto;"></div>
+                                    <h4 style="font-weight: bold; text-transform: uppercase; margin-top: 10px;">BÁO CÁO COI THI, CHẤM THI THEO LỚP VÀ HỌC PHẦN</h4>
+                                </td>
+                                <td style="width: 20%;"/>
                             </tr>
-                        </thead>
-                        <tbody>
-                            <t t-foreach="data" t-as="line" t-set="idx" t-value="enumerate(data, start=1)">
+                        </table>
+                    </div>
+
+                    <div class="content" style="margin-top: 15px;">
+                        <table class="table table-bordered table-sm" style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 11pt;">
+                            <thead style="background-color: #f2f2f2; text-align: center; font-weight: bold;">
                                 <tr>
-                                    <td><t t-esc="idx[0]"/></td>
-                                    <td><t t-esc="line.class_name"/></td>
-                                    <td><t t-esc="line.course_name"/></td>
-                                    <td><t t-esc="line.exam_type"/></td>
-                                    <td><t t-esc="line.exam_date"/></td>
-                                    <td><t t-esc="line.teachers"/></td>
-                                    <td><t t-esc="line.note"/></td>
+                                    <th style="width: 5%; border: 1px solid #000;">STT</th>
+                                    <th style="width: 15%; border: 1px solid #000;">Tên Lớp</th>
+                                    <th style="width: 20%; border: 1px solid #000;">Tên Học phần</th>
+                                    <th style="width: 12%; border: 1px solid #000;">Hình thức thi</th>
+                                    <th style="width: 12%; border: 1px solid #000;">Ngày thi</th>
+                                    <th style="width: 24%; border: 1px solid #000;">Giảng viên &amp; Nhiệm vụ</th>
+                                    <th style="width: 12%; border: 1px solid #000;">Ghi chú</th>
                                 </tr>
-                            </t>
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                <t t-if="docs">
+                                    <t t-foreach="docs" t-as="doc">
+                                        <t t-set="assignments" t-value="env['faculty.exam.assignment'].search([('student_class_id', '=', doc.student_class_id.id), ('semester_id', '=', doc.semester_id.id)])"/>
+                                        <t t-set="stt" t-value="1"/>
+                                        <t t-foreach="assignments" t-as="ass">
+                                            <tr>
+                                                <td style="border: 1px solid #000; text-align: center;"><t t-esc="stt"/></td>
+                                                <td style="border: 1px solid #000;"><t t-esc="ass.student_class_id.name"/></td>
+                                                <td style="border: 1px solid #000;"><t t-esc="ass.class_course_id.name if ass.class_course_id else ''"/></td>
+                                                <td style="border: 1px solid #000; text-align: center;"><t t-esc="ass.exam_format or ''"/></td>
+                                                <td style="border: 1px solid #000; text-align: center;"><t t-esc="ass.exam_date.strftime('%d/%m/%Y') if ass.exam_date else ''"/></td>
+                                                <td style="border: 1px solid #000;">
+                                                    <div>Coi 1: <t t-esc="ass.proctor_1_id.name if ass.proctor_1_id else ''"/></div>
+                                                    <div>Chấm 1: <t t-esc="ass.grader_1_id.name if ass.grader_1_id else ''"/></div>
+                                                </td>
+                                                <td style="border: 1px solid #000;"><t t-esc="ass.notes or ''"/></td>
+                                            </tr>
+                                            <t t-set="stt" t-value="stt + 1"/>
+                                        </t>
+                                        <t t-if="not assignments">
+                                            <tr>
+                                                <td colspan="7" style="border: 1px solid #000; text-align: center; font-style: italic;">Chưa có phân công thi cho lớp và học kỳ này</td>
+                                            </tr>
+                                        </t>
+                                    </t>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="footer-sign mt-5" style="page-break-inside: avoid;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="width: 50%; text-align: center; vertical-align: top;">
+                                    <div style="font-weight: bold; font-size: 11pt;">NGƯỜI LẬP BIỂU</div>
+                                    <div style="font-style: italic; font-size: 10pt; margin-bottom: 60px;">(Ký và ghi rõ họ tên)</div>
+                                    <div style="font-weight: bold;"><span t-esc="env.user.name"/></div>
+                                </td>
+                                <td style="width: 50%; text-align: center; vertical-align: top;">
+                                    <div style="font-weight: bold; font-size: 11pt;">TRƯỞNG KHOA / LÃNH ĐẠO KHOA</div>
+                                    <div style="font-style: italic; font-size: 10pt; margin-bottom: 60px;">(Ký, ghi rõ họ tên và đóng dấu)</div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
                 </div>
-            </div>
+            </t>
         </t>
     </template>
 
     <!-- Report action -->
-    <report id="faculty_exam_semester_report" string="Báo cáo coi/chấm thi" model="faculty.exam.report.wizard" report_type="qweb-pdf" name="faculty_work_mgmt.faculty_exam_semester_report_template" file="faculty_work_mgmt/faculty_exam_semester_report.xml"/>
+    <record id="action_faculty_exam_semester_report" model="ir.actions.report">
+        <field name="name">Báo cáo coi/chấm thi theo lớp và học phần</field>
+        <field name="model">faculty.exam.report.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">faculty_work_mgmt.faculty_exam_semester_report_template</field>
+        <field name="report_file">faculty_work_mgmt.faculty_exam_semester_report_template</field>
+        <field name="binding_model_id" ref="model_faculty_exam_report_wizard"/>
+        <field name="binding_type">report</field>
+    </record>
 </odoo>
 

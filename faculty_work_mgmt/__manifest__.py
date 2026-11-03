@@ -61,8 +61,10 @@ Giai đoạn 4 (Dashboard Điều hành Real-time, Lịch chung Hover Popover, C
         'base',
         'mail',
     ],
+    'external_dependencies': {
+        'python': ['openpyxl'],
+    },
     'data': [
-        'reports/faculty_exam_semester_report.xml',
         'security/faculty_security.xml',
         'security/ir.model.access.csv',
         'data/faculty_cron_data.xml',
@@ -81,6 +83,7 @@ Giai đoạn 4 (Dashboard Điều hành Real-time, Lịch chung Hover Popover, C
         'reports/faculty_reports.xml',
         'reports/faculty_lecturer_llkh_report.xml',
         'reports/faculty_stream_assignment_report.xml',
+        'reports/faculty_exam_semester_report.xml',
     ],
     'installable': True,
     'application': True,
