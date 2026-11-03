@@ -6,7 +6,6 @@
         <field name="model">faculty.stream.assignment</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">faculty_work_mgmt.report_faculty_stream_assignment</field>
-        <field name="report_file">faculty_work_mgmt.report_faculty_stream_assignment</field>
         <field name="print_report_name">'Phan_cong_nhiem_vu_Khoa'</field>
         <field name="binding_model_id" ref="model_faculty_stream_assignment"/>
         <field name="binding_type">report</field>

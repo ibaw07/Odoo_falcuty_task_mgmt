@@ -15,7 +15,7 @@
                 <filter string="Giáo sư / Phó Giáo sư" name="filter_professors" domain="[('academic_title', 'in', ['prof', 'assoc_prof'])]"/>
                 <filter string="Tiến sĩ / TSKH" name="filter_doctors" domain="[('academic_degree', 'in', ['doctor', 'doctor_science'])]"/>
 
-                <group expand="0" string="Gom nhóm theo">
+                <group>
                     <filter string="Chức vụ / Vị trí" name="group_position" context="{'group_by': 'position_title'}"/>
                     <filter string="Bậc lương" name="group_rank" context="{'group_by': 'rank_id'}"/>
                     <filter string="Học vị" name="group_degree" context="{'group_by': 'academic_degree'}"/>

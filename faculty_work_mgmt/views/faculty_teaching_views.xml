@@ -101,7 +101,7 @@
                 <field name="head_lecturer_id" string="Giảng viên quản lý"/>
                 <filter string="Đang hoạt động" name="filter_active" domain="[('active', '=', True)]"/>
                 <filter string="Học phần tích hợp" name="filter_composite" domain="[('is_composite', '=', True)]"/>
-                <group expand="0" string="Gom nhóm theo">
+                <group>
                     <filter string="Chương trình đào tạo" name="group_curriculum" context="{'group_by': 'curriculum_id'}"/>
                     <filter string="Giảng viên quản lý" name="group_head_lecturer" context="{'group_by': 'head_lecturer_id'}"/>
                 </group>
@@ -310,7 +310,7 @@
                 <filter string="Có mời Báo cáo viên" name="filter_guest_speaker" domain="[('has_guest_speaker', '=', True)]"/>
                 <filter string="Chưa ra đề thi" name="filter_paper_unlocked" domain="[('paper_locked', '=', False)]"/>
                 <filter string="Chưa hoàn thành khảo thí" name="filter_exam_undone" domain="[('exam_done', '=', False)]"/>
-                <group expand="0" string="Gom nhóm theo">
+                <group>
                     <filter string="Năm học" name="group_academic_year" context="{'group_by': 'academic_year_id'}"/>
                     <filter string="Học kỳ" name="group_semester" context="{'group_by': 'semester_id'}"/>
                     <filter string="Lớp" name="group_class" context="{'group_by': 'class_id'}"/>

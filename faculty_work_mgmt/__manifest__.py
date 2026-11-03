@@ -66,7 +66,7 @@ Giai đoạn 4 (Dashboard Điều hành Real-time, Lịch chung Hover Popover, C
     },
     'data': [
         'security/faculty_security.xml',
-        'security/ir.model.access.csv',
+        'security/ir.access.csv',
         'data/faculty_cron_data.xml',
         'views/faculty_dashboard_calendar_views.xml',
         'views/faculty_excel_wizard_views.xml',

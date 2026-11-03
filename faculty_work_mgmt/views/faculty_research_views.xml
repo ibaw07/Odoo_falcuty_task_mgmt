@@ -163,7 +163,7 @@
                 <filter name="filter_projects" string="Đề tài NCKH" domain="[('research_type', 'in', ['project_level', 'project_theory'])]"/>
                 <filter name="filter_workshops" string="Hội thảo / Tọa đàm" domain="[('research_type', 'in', ['conference_org', 'seminar_org'])]"/>
                 <filter name="filter_teaching_materials" string="Học liệu / Đề cương / CTĐT" domain="[('research_type', 'in', ['study_material', 'question_bank', 'build_curriculum', 'build_syllabus', 'book'])]"/>
-                <group expand="0" string="Gom nhóm theo">
+                <group>
                     <filter name="group_year" string="Năm học" context="{'group_by': 'academic_year_id'}"/>
                     <filter name="group_type" string="Loại hình NCKH" context="{'group_by': 'research_type'}"/>
                     <filter name="group_leader" string="Chủ nhiệm" context="{'group_by': 'leader_id'}"/>

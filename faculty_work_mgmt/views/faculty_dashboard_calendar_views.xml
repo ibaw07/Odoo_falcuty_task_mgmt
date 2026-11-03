@@ -346,7 +346,7 @@ action = model.action_open_dashboard()
                 <filter string="Báo cáo thực tế (Xanh lá)" name="filter_guest_speaker" domain="[('event_category', '=', 'guest_speaker')]"/>
                 <filter string="Sự kiện Khoa &amp; Hạn việc (Đỏ/Tím)" name="filter_dept_task" domain="[('event_category', '=', 'dept_event_task')]"/>
                 <filter string="Sinh nhật Cán bộ (Vàng)" name="filter_birthday" domain="[('event_category', '=', 'birthday')]"/>
-                <group expand="0" string="Gom nhóm">
+                <group>
                     <filter string="Phân loại sự kiện" name="group_by_category" context="{'group_by': 'event_category'}"/>
                     <filter string="Cán bộ Giảng viên" name="group_by_lecturer" context="{'group_by': 'lecturer_id'}"/>
                     <filter string="Ngày bắt đầu" name="group_by_date" context="{'group_by': 'start_datetime:day'}"/>

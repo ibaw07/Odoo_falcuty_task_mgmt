@@ -93,7 +93,6 @@
         <field name="model">faculty.exam.report.wizard</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">faculty_work_mgmt.faculty_exam_semester_report_template</field>
-        <field name="report_file">faculty_work_mgmt.faculty_exam_semester_report_template</field>
         <field name="binding_model_id" ref="model_faculty_exam_report_wizard"/>
         <field name="binding_type">report</field>
     </record>

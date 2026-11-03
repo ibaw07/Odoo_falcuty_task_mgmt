@@ -147,7 +147,7 @@
                 <filter name="draft" string="Dự thảo" domain="[('state', '=', 'draft')]"/>
                 <filter name="waiting_dean" string="Chờ duyệt" domain="[('state', '=', 'waiting_dean')]"/>
                 <filter name="approved" string="Đã hoàn thành" domain="[('state', '=', 'approved')]"/>
-                <group expand="0" string="Gom nhóm theo">
+                <group>
                     <filter name="group_year" string="Năm học" context="{'group_by': 'academic_year_id'}"/>
                     <filter name="group_type" string="Loại hoạt động" context="{'group_by': 'activity_type'}"/>
                     <filter name="group_lead" string="Người phụ trách chính" context="{'group_by': 'lead_lecturer_id'}"/>
@@ -255,7 +255,7 @@
                 <separator/>
                 <filter name="active_tasks" string="Đang thực hiện" domain="[('state', '=', 'active')]"/>
                 <filter name="regular" string="Việc thường xuyên" domain="[('task_nature', '=', 'regular')]"/>
-                <group expand="0" string="Gom nhóm theo">
+                <group>
                     <filter name="group_stream" string="Mảng chức năng" context="{'group_by': 'work_stream'}"/>
                     <filter name="group_supervisor" string="Lãnh đạo phụ trách" context="{'group_by': 'supervisor_id'}"/>
                     <filter name="group_lecturer" string="Cán bộ thực hiện chính" context="{'group_by': 'lecturer_id'}"/>
@@ -423,7 +423,7 @@
                 <filter name="study_materials" string="Học liệu / Ngân hàng đề" domain="[('document_type', 'in', ['study_material', 'question_bank'])]"/>
                 <filter name="books" string="Sách / Giáo trình" domain="[('document_type', '=', 'book')]"/>
                 <filter name="papers" string="Bài báo &amp; Kỷ yếu" domain="[('document_type', '=', 'scientific_paper')]"/>
-                <group expand="0" string="Gom nhóm theo">
+                <group>
                     <filter name="group_category" string="Thư mục" context="{'group_by': 'category_id'}"/>
                     <filter name="group_type" string="Loại tài liệu" context="{'group_by': 'document_type'}"/>
                     <filter name="group_author" string="Tác giả" context="{'group_by': 'author_id'}"/>

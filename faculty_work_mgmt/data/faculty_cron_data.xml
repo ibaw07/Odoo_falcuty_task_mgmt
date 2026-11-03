@@ -9,7 +9,6 @@
             <field name="code">model.cron_check_salary_promotions()</field>
             <field name="interval_number">1</field>
             <field name="interval_type">days</field>
-            <field name="numbercall">-1</field>
             <field name="active" eval="True"/>
         </record>
 
@@ -21,7 +20,6 @@
             <field name="code">model.cron_periodic_task_reminders()</field>
             <field name="interval_number">1</field>
             <field name="interval_type">weeks</field>
-            <field name="numbercall">-1</field>
             <field name="active" eval="True"/>
         </record>
 
@@ -33,7 +31,6 @@
             <field name="code">model.cron_sync_calendar_events()</field>
             <field name="interval_number">1</field>
             <field name="interval_type">days</field>
-            <field name="numbercall">-1</field>
             <field name="active" eval="True"/>
         </record>
     </data>

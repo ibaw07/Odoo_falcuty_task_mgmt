@@ -18,7 +18,7 @@
                 <filter string="Chưa khóa sổ" name="filter_unlocked" domain="[('is_locked', '=', False)]"/>
                 <filter string="Đã khóa sổ" name="filter_locked" domain="[('is_locked', '=', True)]"/>
 
-                <group expand="0" string="Gom nhóm theo">
+                <group>
                     <filter string="Giảng viên" name="group_lecturer" context="{'group_by': 'lecturer_id'}"/>
                     <filter string="Nhóm tiêu chí" name="group_category" context="{'group_by': 'category'}"/>
                     <filter string="Loại nhiệm vụ" name="group_activity_type" context="{'group_by': 'activity_type'}"/>
