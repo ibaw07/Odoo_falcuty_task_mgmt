@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'Quản lý Công việc Khoa Đào tạo Đại học (Giai đoạn 1, 2, 3 & 4)',
+    'name': 'Faculty Work Management - Quản lý Công việc Khoa Đào tạo Đại học',
     'version': '20.0.4.0.0',
-    'summary': 'Dashboard Điều hành Real-time, Lịch chung Hover Popup, Cron Job Nhắc việc & Khung Wizard Xuất Excel 2 Sheet',
+    'summary': 'Faculty Work Management - Dashboard Điều hành Real-time, Lịch chung, Giờ chuẩn & Báo cáo Excel 2 Sheet',
     'description': """
 Module Quản lý Công việc Khoa Đào tạo Đại học Việt Nam (Odoo 20)
 ================================================================
