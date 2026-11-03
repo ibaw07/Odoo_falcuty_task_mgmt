@@ -5,19 +5,63 @@
               name="Khoa Đào tạo"
               sequence="10"/>
 
-    <!-- Top Submenu: Giảng viên & Nhân sự -->
+    <!-- 0.1. Bảng Điều hành Real-time (Dashboard Thông minh) -->
+    <menuitem id="menu_faculty_dashboard"
+              name="Bảng Điều hành Real-time"
+              parent="menu_faculty_root"
+              action="action_faculty_dashboard_server"
+              sequence="1"/>
+
+    <!-- 0.2. Lịch Công tác Chung Toàn Khoa (Google Calendar & Popover) -->
+    <menuitem id="menu_faculty_calendar"
+              name="Lịch Công tác Chung"
+              parent="menu_faculty_root"
+              action="action_faculty_calendar_event"
+              sequence="2"/>
+
+    <!-- 1. Giảng viên & Nhân sự -->
     <menuitem id="menu_faculty_lecturer_root"
               name="Giảng viên"
               parent="menu_faculty_root"
               sequence="10"/>
 
-    <!-- Top Submenu: Sổ cái & Giờ chuẩn -->
-    <menuitem id="menu_faculty_hour_ledger_root"
-              name="Sổ cái Giờ chuẩn"
+    <!-- 2. Giảng dạy & Đào tạo (Trụ cột 1) -->
+    <menuitem id="menu_faculty_teaching_root"
+              name="Giảng dạy &amp; Đào tạo"
               parent="menu_faculty_root"
               sequence="20"/>
 
-    <!-- Top Submenu: Cấu hình Khoa -->
+    <!-- 3. Nghiên cứu Khoa học (Trụ cột 2) -->
+    <menuitem id="menu_faculty_research_root"
+              name="Nghiên cứu Khoa học"
+              parent="menu_faculty_root"
+              sequence="25"/>
+
+    <!-- 4. Khảo thí & Thực tập -->
+    <menuitem id="menu_faculty_exam_internship_root"
+              name="Khảo thí &amp; Thực tập"
+              parent="menu_faculty_root"
+              sequence="30"/>
+
+    <!-- 5. Hoạt động khác & Thư viện (Trụ cột 3) -->
+    <menuitem id="menu_faculty_other_work_root"
+              name="Hoạt động khác &amp; Thư viện"
+              parent="menu_faculty_root"
+              sequence="35"/>
+
+    <!-- 6. Sổ cái & Giờ chuẩn -->
+    <menuitem id="menu_faculty_hour_ledger_root"
+              name="Sổ cái Giờ chuẩn"
+              parent="menu_faculty_root"
+              sequence="40"/>
+
+    <menuitem id="menu_faculty_excel_report_wizard"
+              name="Xuất Báo cáo Excel 2 Sheet"
+              parent="menu_faculty_hour_ledger_root"
+              action="action_faculty_excel_report_wizard"
+              sequence="50"/>
+
+    <!-- 5. Cấu hình Khoa -->
     <menuitem id="menu_faculty_config_root"
               name="Cấu hình Khoa"
               parent="menu_faculty_root"

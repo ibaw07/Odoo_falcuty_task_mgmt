@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- 1. Cron Job quét và nhắc Nâng bậc lương (trước 60 ngày) -->
+        <record id="cron_faculty_check_salary_promotions" model="ir.cron">
+            <field name="name">Khoa Đào tạo: Tự động quét và nhắc Nâng bậc lương (Trước 60 ngày)</field>
+            <field name="model_id" ref="model_faculty_other_work"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_check_salary_promotions()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- 2. Cron Job nhắc việc định kỳ theo Quy trình thống kê giờ hoạt động -->
+        <record id="cron_faculty_periodic_task_reminders" model="ir.cron">
+            <field name="name">Khoa Đào tạo: Nhắc việc định kỳ Thống kê Giờ hoạt động</field>
+            <field name="model_id" ref="model_faculty_other_work"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_periodic_task_reminders()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">weeks</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- 3. Cron Job tự động đồng bộ Lịch Công tác Chung Toàn Khoa -->
+        <record id="cron_faculty_sync_calendar_events" model="ir.cron">
+            <field name="name">Khoa Đào tạo: Tự động đồng bộ Lịch Công tác Chung Toàn Khoa</field>
+            <field name="model_id" ref="model_faculty_other_work"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_sync_calendar_events()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+        </record>
+    </data>
+</odoo>
+

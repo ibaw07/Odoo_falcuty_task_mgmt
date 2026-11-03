@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Wizard view for Schedule Suggestion -->
+    <record id="view_faculty_schedule_suggestion_wizard_form" model="ir.ui.view">
+        <field name="name">faculty.schedule.suggestion.wizard.form</field>
+        <field name="model">faculty.schedule.suggestion.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Gợi ý lịch trống giảng viên">
+                <group>
+                    <field name="date_from"/>
+                    <field name="date_to"/>
+                    <field name="course_id"/>
+                </group>
+                <footer>
+                    <button name="action_find_free_slots" type="object" string="Tìm lịch trống" class="btn-primary"/>
+                    <button string="Đóng" class="btn-secondary" special="cancel"/>
+                </footer>
+                <separator/>
+                <field name="suggestion_line_ids" widget="one2many_list" mode="list,form">
+                    <list>
+                        <field name="teacher_id"/>
+                        <field name="date"/>
+                        <field name="period"/>
+                    </list>
+                </field>
+            </form>
+        </field>
+    </record>
+
+    <!-- Wizard view for Exam Report -->
+    <record id="view_faculty_exam_report_wizard_form" model="ir.ui.view">
+        <field name="name">faculty.exam.report.wizard.form</field>
+        <field name="model">faculty.exam.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Báo cáo coi thi / chấm thi">
+                <group>
+                    <field name="academic_year_id"/>
+                    <field name="semester_id"/>
+                    <field name="student_class_id"/>
+                </group>
+                <footer>
+                    <button name="action_generate_report" type="object" string="Xuất báo cáo" class="btn-primary"/>
+                    <button string="Đóng" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action to open Schedule Suggestion wizard -->
+    <record id="action_faculty_schedule_suggestion_wizard" model="ir.actions.act_window">
+        <field name="name">Gợi ý lịch trống giảng viên</field>
+        <field name="res_model">faculty.schedule.suggestion.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="view_faculty_schedule_suggestion_wizard_form"/>
+    </record>
+
+    <!-- Action to open Exam Report wizard -->
+    <record id="action_faculty_exam_report_wizard" model="ir.actions.act_window">
+        <field name="name">Báo cáo coi/chấm thi</field>
+        <field name="res_model">faculty.exam.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="view_faculty_exam_report_wizard_form"/>
+    </record>
+</odoo>
+

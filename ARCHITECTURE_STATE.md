@@ -1,13 +1,13 @@
 # KIẾN TRÚC HỆ THỐNG: MODULE QUẢN LÝ KHOA ĐÀO TẠO ĐẠI HỌC (ODOO 20)
 **Tên kỹ thuật:** `faculty_work_mgmt`  
-**Phiên bản:** `20.0.1.0.0` (Community Edition / On-Premise LAN)  
-**Trạng thái triển khai:** **ĐÃ HOÀN THÀNH GIAI ĐOẠN 1** (Core Models, Ledger, Profiles, Security & Reports)  
+**Phiên bản:** `20.0.4.0.0` (Community Edition / On-Premise LAN)  
+**Trạng thái triển khai:** **ĐÃ HOÀN THÀNH GIAI ĐOẠN 1, GIAI ĐOẠN 2, GIAI ĐOẠN 3 & KHUNG GIAI ĐOẠN 4**  
 **Tài liệu quy chuẩn:** `@rules.md`
 
 ---
 
-## 1. TỔNG QUAN GIAI ĐOẠN 1
-Giai đoạn 1 đã khởi tạo nền tảng cốt lõi của hệ thống, bao gồm cấu trúc module, 3 file models Python quan trọng nhất, toàn bộ hệ thống phân quyền 5 nhóm, giao diện XML views chuẩn Odoo 20 (dùng `<list>`, `<chatter/>`, không dùng `<tree>`), và mẫu in QWeb Lý lịch Khoa học (LLKH) 15 mục.
+## 1. TỔNG QUAN CẤU TRÚC HIỆN TẠI
+Hệ thống hiện đã hoàn thiện toàn bộ **7 file models Python cốt lõi**, hệ thống **Wizards**, toàn bộ views XML chuẩn Odoo 20 (`<list>`, `<calendar>`, `<chatter/>`, không dùng `<tree>`), phân quyền 5 nhóm, bảo mật access CSV và các báo cáo QWeb A4 chuẩn hành chính.
 
 ```
 d:/odoo_faculty_workspace/
@@ -15,103 +15,115 @@ d:/odoo_faculty_workspace/
 │   └── rules.md
 ├── ARCHITECTURE_STATE.md
 └── faculty_work_mgmt/
-    ├── __init__.py
-    ├── __manifest__.py
+    ├── __init__.py                      # Nạp models và wizards
+    ├── __manifest__.py                  # Phiên bản 20.0.4.0.0 & danh mục data/views/security đầy đủ
     ├── models/
     │   ├── __init__.py
-    │   ├── faculty_config.py
-    │   ├── faculty_hour_ledger.py
-    │   └── faculty_lecturer.py
+    │   ├── faculty_config.py            # Giai đoạn 1: Cấu hình, 16 Bậc lương, Định mức, Quy chuẩn, Quy trình
+    │   ├── faculty_hour_ledger.py       # Giai đoạn 1: Sổ cái Giờ chuẩn trung tâm (_read_group)
+    │   ├── faculty_lecturer.py          # Giai đoạn 1: Giảng viên, 3 Ô Tiêu chí, LLKH 15 mục, Chữ ký số
+    │   ├── faculty_teaching.py          # Giai đoạn 2: CTĐT, Học phần, Lớp, Lịch giảng, Ra đề, Checklist 7 bước
+    │   ├── faculty_exam_internship.py   # Giai đoạn 2: Khảo thí dọc, Hướng dẫn tốt nghiệp, Thực tập, Dự toán
+    │   ├── faculty_research.py          # Giai đoạn 3: 13 loại hình NCKH, Dự toán, Cross-Pillar Sync, Alert Level
+    │   └── faculty_other_work.py        # Giai đoạn 3 & 4: Hoạt động khác, 6 Mảng chức năng, Thư viện Offline,
+    │                                    #                 Lịch chung (faculty.calendar.event),
+    │                                    #                 Dashboard Real-time (faculty.dashboard) & Cron Jobs
+    ├── wizards/
+    │   ├── __init__.py
+    │   ├── faculty_return_wizard.py     # Wizard Trả lại việc / Yêu cầu chỉnh sửa đích danh
+    │   ├── faculty_schedule_wizard.py   # Wizard Gợi ý lịch trống giảng viên & Báo cáo thi
+    │   └── faculty_excel_report_wizard.py # Giai đoạn 4: Khung Wizard Xuất Excel 2 Sheet (Ký tươi & Chữ ký số)
     ├── security/
-    │   ├── faculty_security.xml
-    │   └── ir.model.access.csv
+    │   ├── faculty_security.xml         # Phân quyền 5 nhóm, alias group_faculty_lecturer, Record Rules 1-hop
+    │   └── ir.model.access.csv          # Khai báo quyền truy cập 100% các model nghiệp vụ & wizards
+    ├── data/
+    │   └── faculty_cron_data.xml        # Giai đoạn 4: 3 Cron Job tự động (Nâng bậc lương, Nhắc việc, Đồng bộ lịch)
     ├── views/
-    │   ├── faculty_menus.xml
+    │   ├── faculty_menus.xml            # Menu Khoa, Bảng Điều hành Real-time, Lịch chung, Sổ cái, Cấu hình
+    │   ├── faculty_dashboard_calendar_views.xml # Giai đoạn 4: View Dashboard Real-time & View Calendar Popover
+    │   ├── faculty_excel_wizard_views.xml       # Giai đoạn 4: Form View Wizard Xuất Excel 2 Sheet
     │   ├── faculty_config_views.xml
     │   ├── faculty_hour_ledger_views.xml
-    │   └── faculty_lecturer_views.xml
+    │   ├── faculty_lecturer_views.xml
+    │   ├── faculty_teaching_views.xml
+    │   ├── faculty_exam_internship_views.xml
+    │   ├── faculty_research_views.xml
+    │   ├── faculty_other_work_views.xml
+    │   ├── faculty_schedule_wizard_views.xml
+    │   └── faculty_return_wizard_views.xml
     └── reports/
         ├── faculty_reports.xml
-        └── faculty_lecturer_llkh_report.xml
+        ├── faculty_lecturer_llkh_report.xml
+        ├── faculty_exam_semester_report.xml
+        └── faculty_stream_assignment_report.xml
 ```
 
 ---
 
-## 2. CHI TIẾT CÁC THÀNH PHẦN ĐÃ TRIỂN KHAI
+## 2. CHI TIẾT CÁC THÀNH PHẦN GIAI ĐOẠN 4 ĐÃ TRIỂN KHAI
 
-### 2.1. Cấu hình Module (`__manifest__.py`)
-- **Dependencies:** `['base', 'mail']`.
-- **Ngôn ngữ:** 100% Tiếng Việt, chuẩn thể thức giáo dục đại học Việt Nam.
-- **Tải đầy đủ:** Security XML, Access CSV, Views (Menus, Config, Hour Ledger, Lecturer), và QWeb Reports.
-
-### 2.2. Python Models Cốt lõi (`models/`)
-1. **`models/faculty_config.py`**:
-   - `DepartmentBackToListMixin`: Cung cấp nút `"Quay lại danh sách"` đồng bộ trên mọi Form view chính qua `action_back_to_list()`.
-   - `faculty.academic.year`: Năm học theo chu kỳ chuẩn từ 01/08 đến 31/07. Nút `action_close_year()` chốt sổ cuối năm.
-   - `faculty.academic.semester`: Các học kỳ trong năm học (HK1, HK2, HK Hè).
-   - `faculty.rank.config`: 16 bậc lương với niên hạn nâng bậc (mặc định 36 tháng cho ngạch giảng viên).
-   - `faculty.title.norm`: Định mức chuẩn 3 tiêu chí theo chức danh (Giảng dạy: 270 tiết; NCKH: 600 giờ; Khác: 100 giờ).
-   - `faculty.norm.reduction`: Chế độ miễn giảm kiêm nhiệm & đi học (>= 4 tuần tự động tính giảm theo công thức `Số tuần / 44`).
-   - `faculty.norm.config`: Bảng quy chuẩn giờ chuẩn động:
-     + Hệ số lớp đông >= 40 HV là `1.2`.
-     + Đơn giá coi thi, chấm thi Tự luận, Trắc nghiệm, Tiểu luận, Vấn đáp.
-     + Định mức ra đề thi mới (Tự luận: 5h/đề, Vấn đáp: 1h/câu, Tiểu luận: 2h/chủ đề).
-   - `faculty.exam.grading.rule`: Bảng quy tắc khảo thí động: Từ sĩ số X đến Y -> Số bài chấm kiểm tra random = cố định hoặc % sĩ số. Có hàm `calculate_audit_count(student_count)`.
-   - `faculty.payment.regulation` & `faculty.payment.regulation.line`: Quy định thanh toán (List view đúng 4 cột: STT, Loại thanh toán, Căn cứ [Số văn bản - Ngày], Ghi chú; Form view có Tên hoạt động, Căn cứ pháp lý, File đính kèm `attachment=True`, và bảng Các mục chi/Đơn giá áp dụng).
-   - `faculty.workflow.process` & `faculty.workflow.step`: Quy trình & Biểu mẫu quy định Khoa (upload Word/PDF qua `ir.attachment`, luồng duyệt `draft -> waiting_dean -> approved`).
-
-2. **`models/faculty_hour_ledger.py`**:
-   - `faculty.hour.ledger`: Sổ cái Giờ chuẩn trung tâm tập trung toàn bộ dữ liệu giờ của Khoa.
-   - Các trường: `lecturer_id`, `academic_year_id`, `semester_id`, `date`, `category` (`teaching`, `research`, `other`), `activity_type`, `name`, `raw_hours`, `coefficient`, `standard_hours`, `res_model`, `res_id`, `is_locked`.
-   - Hàm `post_ledger_entry(vals)`: Tự động ghi/cập nhật dòng sổ cái theo `res_model` + `res_id` + `lecturer_id` chống trùng lặp dữ liệu; chặn sửa xóa nếu dòng sổ đã chốt.
-   - Hàm `action_lock_year_ledger()` & `action_unlock_year_ledger()`: Khóa/mở khóa sổ cái.
-
-3. **`models/faculty_lecturer.py`**:
-   - `_inherits = {'res.partner': 'partner_id'}` và `['mail.thread', 'mail.activity.mixin', 'department.back.to.list.mixin']`.
-   - Các trường: `lecturer_code`, `user_id`, Học hàm (+ năm bổ nhiệm), Học vị (+ năm công nhận), Chức vụ, `rank_id`, `rank_date`, `next_rank_date`, `days_to_promotion` (non-stored + search method), `is_promotion_soon` (cảnh báo <= 60 ngày), `signature_image`.
-   - **5 Cờ phân quyền trực quan:** `can_edit_subjects`, `can_edit_classes`, `can_edit_exams`, `can_edit_faculty_tasks`, `can_manage_hr` (tự động đồng bộ sang `res.groups`).
-   - **Giao diện Hồ sơ cá nhân tinh gọn:**
-     + Bỏ các ô định mức/miễn giảm rời rạc ở đầu trang, bỏ ô bù trừ chéo khỏi hồ sơ cá nhân.
-     + Không sử dụng widget hover gây popup thừa.
-     + **3 Ô Tiêu chí (1. Giảng dạy - 2. NCKH - 3. Hoạt động khác):**
-       * Ô 1 (Giảng dạy): Hiển thị rõ Định mức sau giảm, Giờ giảng định mức (= 50% định mức sau giảm), Giờ giảng đứng lớp thực tế, Tổng số giờ thực tế Giảng dạy, Thừa/Thiếu + Bảng dòng sổ cái giờ giảng dạy.
-       * Ô 2 (NCKH): Định mức sau giảm, Tổng số giờ thực tế NCKH, Thừa/Thiếu + Bảng dòng sổ cái NCKH.
-       * Ô 3 (Hoạt động khác): Định mức sau giảm, Tổng số giờ thực tế HĐ khác, Thừa/Thiếu + Bảng dòng sổ cái HĐ khác.
-       * Tối ưu hóa hiệu năng: Tổng hợp dữ liệu từ `faculty.hour.ledger` thông qua `_read_group`, chống triệt để lỗi N+1 SQL queries.
-   - **Tab Quy hoạch & Phát triển cán bộ:** Chức danh quy hoạch, giai đoạn, kế hoạch đào tạo bồi dưỡng. Hàm quét nhắc nâng bậc `action_check_promotion_reminders()` tạo `mail.activity` trước 60 ngày.
-   - **Tab Lý lịch Khoa học (Đủ 15 mục chuẩn):**
-     + Cấp bậc/Chức vụ hiển thị dạng `"Bậc 12/16 - Trưởng khoa"`.
-     + Model `faculty.lecturer.resume.line`: Quá trình đào tạo, Quá trình công tác, Đề tài KH&CN, SHTT, Giải thưởng.
-     + Model `faculty.lecturer.publication`: Công trình khoa học công bố, kèm cờ `is_top_selected` (ràng buộc validation tối đa 5 công trình tiêu biểu).
-
-### 2.3. Phân quyền & Bảo mật (`security/`)
-- `faculty_security.xml`:
-  1. `group_faculty_user`: Giảng viên / Cán bộ nhân viên (Quyền cơ sở).
-  2. `group_faculty_training`: Quản lý Đào tạo / Giáo vụ.
-  3. `group_faculty_exam`: Quản lý Khảo thí.
-  4. `group_faculty_research`: Quản lý Nghiên cứu Khoa học.
-  5. `group_faculty_dean`: Ban Chủ nhiệm Khoa / Trưởng Khoa (Toàn quyền quản trị).
-  - Record rules: Giảng viên chỉ xem/sửa hồ sơ và sổ cái cá nhân; Lãnh đạo Khoa toàn quyền.
-- `ir.model.access.csv`: Khai báo quyền CRUD cho toàn bộ 15 models nghiệp vụ.
-
-### 2.4. Giao diện Odoo 20 (`views/`)
-- Tuân thủ 100% cú pháp Odoo 20: Thẻ `<list>` thay thế thẻ `<tree>`, `<chatter/>`, `invisible="..."`, `readonly="..."`.
-- Cấu hình List view Quy định thanh toán đúng 4 cột: `STT | Loại thanh toán | Căn cứ (Số văn bản - Ngày) | Ghi chú`.
-- Card giao diện 3 Ô Tiêu chí có bảng con hiển thị chi tiết các dòng sổ cái đã quy đổi.
-
-### 2.5. Mẫu in QWeb (`reports/`)
-- `faculty_reports.xml` & `faculty_lecturer_llkh_report.xml`:
-  - Bản in PDF Lý lịch Khoa học 15 mục chuẩn thể thức hành chính giáo dục Việt Nam.
-  - Tự động lọc tối đa 5 công trình tiêu biểu đã tích chọn (`is_top_selected`).
-  - Cuối trang có phần ngày tháng năm, khối chữ ký nháy của Giảng viên (nhúng ảnh `signature_image`) và khối xác nhận của Trưởng khoa.
+### 2.1. Bảng Điều hành Thông minh Real-time (`faculty.dashboard`)
+Đặt trong `models/faculty_other_work.py` đảm bảo quy tắc **Kiến trúc Tinh gọn 7 File Models**:
+1. **Phân tách Cảnh báo theo Vai trò:**
+   - **Giảng viên cá nhân (`group_faculty_lecturer` / `group_faculty_user`):**
+     + Chỉ hiển thị các công việc, đề tài NCKH và bước Checklist 7 bước học vụ của **chính cá nhân giảng viên đó**.
+     + Trạng thái **Quá hạn:** Màu Tím (`#800080`).
+     + Trạng thái **Khẩn cấp <= 3 ngày** hoặc **Bị trả lại yêu cầu sửa (`need_revision = True`):** Màu Đỏ (`#dc3545`).
+   - **Lãnh đạo Khoa, Giáo vụ, Admin:**
+     + Hiển thị toàn bộ cảnh báo Quá hạn (Màu Tím `#800080`) và Khẩn cấp (Màu Đỏ `#dc3545`) của **toàn thể cán bộ giảng viên trong Khoa**.
+2. **Khu vực Thông tin chung toàn Khoa (Tất cả thành viên cùng thấy):**
+   - **Nhắc lịch Sinh nhật thành viên:** Tự động quét và hiển thị thành viên có ngày sinh trước 7 ngày và trong ngày sinh nhật hôm nay (`is_today = True`).
+   - **Cảnh báo Nâng bậc lương:** Quét niên hạn 16 bậc ngạch lương và hiển thị các giảng viên có `days_to_promotion <= 60` (trước 60 ngày).
+   - **Bảng Theo dõi Thừa / Thiếu Giờ chuẩn Real-time (Thời gian thực):**
+     + Sử dụng `_read_group` trên `faculty.hour.ledger` gom theo `['lecturer_id', 'category']` với điều kiện chỉ cộng các hoạt động/buổi giảng đã thực sự diễn ra tính đến ngày hôm nay (`date <= fields.Date.context_today(self)`).
+     + So sánh trực tiếp với Định mức sau giảm của từng giảng viên (Giảng dạy, NCKH, Hoạt động khác) và hiển thị kết quả Thừa / Thiếu theo thời gian thực (Xanh khi thừa `>= 0`, Đỏ khi thiếu `< 0`).
+3. **Thao tác nhanh trên Header:**
+   - Nút **"Làm mới dữ liệu (Real-time)"** (`action_refresh_dashboard`): Tải lại tức thì số liệu mới nhất.
+   - Nút **"Lịch Công tác Chung Toàn Khoa"** (`action_open_calendar`): Chuyển sang giao diện Lịch.
+   - Nút **"Xuất Báo cáo Excel 2 Sheet"** (`action_open_excel_wizard`): Bật popup wizard xuất báo cáo.
 
 ---
 
-## 3. LỘ TRÌNH TRIỂN KHAI CÁC GIAI ĐOẠN TIẾP THEO
-Theo phân vai quy chế tại `@rules.md`:
-- **Giai đoạn 2 (Nhóm 1 - Giảng dạy):** File `models/faculty_teaching.py` (CTĐT `faculty.curriculum`, Học phần `faculty.course`, Đề cương `faculty.course.syllabus`, Danh sách lớp `faculty.student.class`, Lịch giảng chi tiết `faculty.teaching.session` với cơ chế tích "Đã ra đề" độc quyền và chuỗi checklist 7 bước học vụ).
-- **Giai đoạn 3 (Khảo thí & Thực hành/Thực tập):** File `models/faculty_exam_internship.py` (Lịch thi & Phân công khảo thí dọc `faculty.exam.assignment`, Hướng dẫn tốt nghiệp, Thực hành & Thực tập `faculty.internship.project` kèm Tab Thành phần - Tài liệu - Dự toán).
-- **Giai đoạn 4 (Nhóm 2 - NCKH & Đồng bộ chéo):** File `models/faculty_research.py` (12 loại hình NCKH, Dự toán thanh toán, Cơ chế liên kết chéo tự động Cross-Pillar Sync sang Giảng dạy và LLKH).
-- **Giai đoạn 5 (Nhóm 3 - Hoạt động khác & Thư viện):** File `models/faculty_other_work.py` (7 loại hoạt động khác, Bảng phân công 6 mảng chức năng Khoa, Thư viện Offline qua `ir.attachment`).
-- **Giai đoạn 6 (Wizards & Tiện ích):** Wizard gợi ý lịch trống giảng viên, Wizard xuất danh sách khảo thí học kỳ, Wizard popup trả lại việc có chọn người.
-- **Giai đoạn 7 (Dashboard Real-time & Excel 2 Sheet):** Lịch chung Khoa có hover popup, cảnh báo quá hạn tím/đỏ, xuất Excel 2 sheet kèm chữ ký số bằng `openpyxl`.
+### 2.2. Lịch Công tác Chung Toàn Khoa (`faculty.calendar.event`)
+Giao diện chuẩn Google Calendar trên Odoo 20:
+1. **5 Nhóm Màu Sự kiện (`event_category`) kèm Bộ lọc (Filter) bên phải:**
+   - `teaching` (**Xanh dương**): Lịch giảng dạy chính khóa, dạy bù, học cải thiện (đồng bộ từ `faculty.teaching.session`).
+   - `exam` (**Cam**): Lịch thi, coi thi, hạn chấm thi (đồng bộ từ `faculty.class.course` & `faculty.exam.assignment`).
+   - `guest_speaker` (**Xanh lá**): Lịch báo cáo thực tế & đón báo cáo viên.
+   - `dept_event_task` (**Đỏ / Tím**): Sự kiện chung của Khoa (Họp Khoa, Hội thảo, Bảo vệ) & Hạn chót công việc.
+   - `birthday` (**Vàng**): Sinh nhật cán bộ giảng viên trong Khoa.
+2. **Hỗ trợ Popover / Hover Popup:**
+   - Cấu hình thẻ `<calendar>` chuẩn Odoo 20 với `event_open_popup="true"`.
+   - Popover tóm tắt đầy đủ: Thời gian, Địa điểm / Phòng học, Người chủ trì / Giảng viên đứng lớp, Học phần / Lớp, Ghi chú chi tiết.
+   - Nút **"Mở bản ghi gốc"** (`action_open_source`): Nhảy thẳng đến buổi giảng, đợt thi, nhiệm vụ hoặc công trình NCKH tương ứng.
+3. **Hàm Đồng bộ Tự động (`action_sync_all_events`):** Quét và tổng hợp dữ liệu từ cả 3 trụ cột vào bảng lịch chung với cơ chế khóa `event_key` chống trùng lặp.
+
+---
+
+### 2.3. Hệ thống Cron Job Tự động (`data/faculty_cron_data.xml`)
+3 tác vụ nền tự động định kỳ:
+1. `cron_faculty_check_salary_promotions`: Quét hàng ngày, nếu phát hiện giảng viên có `days_to_promotion <= 60` (còn 60 ngày đến hạn nâng bậc) và chưa có phiếu việc nhắc trong kỳ đó -> Tự động tạo 1 Nhiệm vụ trong `faculty.other.work` (`activity_type = 'recruitment'`) giao cho cán bộ có cờ `can_manage_hr = True` (Quản lý nhân sự).
+2. `cron_faculty_periodic_task_reminders`: Nhắc việc định kỳ theo quy trình thống kê giờ hoạt động của Khoa cho cán bộ có cờ `can_edit_faculty_tasks = True`.
+3. `cron_faculty_sync_calendar_events`: Tự động quét và đồng bộ lịch công tác toàn Khoa hàng ngày.
+
+---
+
+### 2.4. Khung Wizard Xuất Báo cáo Excel 2 Sheet (`wizards/faculty_excel_report_wizard.py`)
+Model TransientModel `faculty.excel.report.wizard`:
+1. **Tham số cấu hình linh hoạt:**
+   - Phạm vi xuất (`report_scope`): `'personal'` (Cá nhân giảng viên), `'department'` (Tổng hợp toàn Khoa), `'monthly'` (Báo cáo tháng N & Kế hoạch tháng N+1).
+   - `academic_year_id`, `semester_id`, `month`, `lecturer_id` (mặc định gắn giảng viên đang đăng nhập).
+   - Tùy chọn bản xuất (`signature_mode`):
+     + `'wet_ink'`: Bản in ký tươi (chừa trống ô ký nháy cá nhân và ô Trưởng khoa xác nhận đóng dấu).
+     + `'digital_sign'`: Bản gắn chữ ký số (tự động gắn ảnh chữ ký cá nhân `signature_image`).
+2. **Cấu trúc 2 Sheet chuẩn:**
+   - **Sheet 1 (Thống kê Giờ chuẩn & Bù trừ):** Gồm 3 phần: (1) Giảng dạy (Định mức, Miễn giảm, Sau giảm, Giờ giảng 50%, Thực tế đứng lớp & tổng, Thừa/Thiếu), (2) NCKH (Định mức, Thực tế, Thừa/Thiếu), Cơ chế Bù trừ chéo, (3) Hoạt động khác (Định mức, Thực tế, Thừa/Thiếu - Không bù trừ).
+   - **Sheet 2 (Tổng hợp Tất cả Công việc Đã làm):** Liệt kê chi tiết từng buổi giảng, công trình NCKH, nhiệm vụ phục vụ đánh giá, xếp loại cuối năm.
+3. **Sẵn sàng cho Bước 4.2:** Các hook phương thức (`_generate_excel_content`, `_render_sheet1_hours`, `_render_sheet2_tasks`, `_render_signatures`) được cấu trúc dạng module rõ ràng, sẵn sàng để Claude Sonnet 4.6 tinh chỉnh sâu bằng thư viện `openpyxl`.
+
+---
+
+### 2.5. Bảo mật & An toàn Dữ liệu
+1. **Quyền đọc `faculty.lecturer`:** Thiết lập `domain_force = "[(1, '=', 1)]"` mở quyền đọc cho `group_faculty_user` đảm bảo 100% không bao giờ bị lỗi trắng dropdown khi chọn giảng viên trên toàn hệ thống.
+2. **Record Rules 1-hop:** Áp dụng phân quyền chặt chẽ trên `faculty.calendar.event`, `faculty.other.work`, `faculty.research.work`, `faculty.library.document`.
+3. **Danh mục CSV:** Khai báo đầy đủ 100% quyền truy cập của các models mới và wizards trong `security/ir.model.access.csv`.

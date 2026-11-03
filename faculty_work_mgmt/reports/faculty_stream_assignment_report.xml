@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Report Action: In Bảng Phân công 6 Mảng Chức năng Khoa -->
+    <record id="action_report_faculty_stream_assignment" model="ir.actions.report">
+        <field name="name">Bảng Phân công 6 Mảng Chức năng Khoa (A4)</field>
+        <field name="model">faculty.stream.assignment</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">faculty_work_mgmt.report_faculty_stream_assignment</field>
+        <field name="report_file">faculty_work_mgmt.report_faculty_stream_assignment</field>
+        <field name="print_report_name">'Phan_cong_nhiem_vu_Khoa'</field>
+        <field name="binding_model_id" ref="model_faculty_stream_assignment"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- QWeb Template chuẩn thể thức Hành chính Việt Nam -->
+    <template id="report_faculty_stream_assignment">
+        <t t-call="web.html_container">
+            <t t-call="web.basic_layout">
+                <div class="page" style="font-family: 'Times New Roman', serif; font-size: 13pt; color: #000; padding: 15px;">
+                    <!-- HEADER HÀNH CHÍNH QUỐC GIA -->
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <tr>
+                            <td style="width: 45%; text-align: center; vertical-align: top;">
+                                <div style="font-size: 12pt; text-transform: uppercase;">TRƯỜNG ĐẠI HỌC ...</div>
+                                <div style="font-size: 12pt; font-weight: bold; text-transform: uppercase;">KHOA ĐÀO TẠO</div>
+                                <div style="border-top: 1px solid #000; width: 40%; margin: 4px auto 8px auto;"></div>
+                                <div style="font-size: 11pt; font-style: italic;">Số: &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp; /QĐ-PCNV</div>
+                            </td>
+                            <td style="width: 55%; text-align: center; vertical-align: top;">
+                                <div style="font-size: 12pt; font-weight: bold; text-transform: uppercase;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                                <div style="font-size: 13pt; font-weight: bold;">Độc lập - Tự do - Hạnh phúc</div>
+                                <div style="border-top: 1px solid #000; width: 50%; margin: 4px auto 8px auto;"></div>
+                                <div style="font-size: 11pt; font-style: italic;">
+                                    ..., ngày <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d')"/>
+                                    tháng <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%m')"/>
+                                    năm <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%Y')"/>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- TIÊU ĐỀ BIỂU MẪU -->
+                    <div style="text-align: center; margin-bottom: 25px;">
+                        <h3 style="font-size: 15pt; font-weight: bold; text-transform: uppercase; margin-bottom: 5px;">
+                            BẢNG PHÂN CÔNG NHIỆM VỤ CÁN BỘ THEO CÁC MẢNG CHỨC NĂNG KHOA
+                        </h3>
+                        <div style="font-size: 12pt; font-style: italic;">
+                            Năm học: <span t-esc="docs[0].academic_year_id.name if docs else ''"/>
+                            <t t-if="docs and docs[0].semester_id">
+                                - Học kỳ: <span t-esc="docs[0].semester_id.name"/>
+                            </t>
+                        </div>
+                    </div>
+
+                    <!-- BẢNG CHI TIẾT CÁC NHIỆM VỤ ĐƯỢC PHÂN CÔNG -->
+                    <table class="table table-bordered table-sm" style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 11pt; margin-bottom: 30px;">
+                        <thead>
+                            <tr style="background-color: #f2f2f2; text-align: center; font-weight: bold;">
+                                <th style="border: 1px solid #000; padding: 6px; width: 5%;">STT</th>
+                                <th style="border: 1px solid #000; padding: 6px; width: 20%;">Mảng chức năng</th>
+                                <th style="border: 1px solid #000; padding: 6px; width: 25%;">Nhiệm vụ phân công</th>
+                                <th style="border: 1px solid #000; padding: 6px; width: 15%;">Cán bộ thực hiện chính</th>
+                                <th style="border: 1px solid #000; padding: 6px; width: 15%;">Cán bộ phối hợp</th>
+                                <th style="border: 1px solid #000; padding: 6px; width: 12%;">Lãnh đạo phụ trách</th>
+                                <th style="border: 1px solid #000; padding: 6px; width: 8%;">Giờ chuẩn</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-set="stream_map" t-value="dict(docs[0]._fields['work_stream'].selection) if docs else {}"/>
+                            <t t-set="stt" t-value="1"/>
+                            <t t-foreach="docs" t-as="doc">
+                                <tr>
+                                    <td style="border: 1px solid #000; text-align: center; padding: 6px; vertical-align: middle;">
+                                        <t t-esc="stt"/>
+                                        <t t-set="stt" t-value="stt + 1"/>
+                                    </td>
+                                    <td style="border: 1px solid #000; padding: 6px; vertical-align: middle; font-weight: bold;">
+                                        <t t-esc="stream_map.get(doc.work_stream, doc.work_stream)"/>
+                                    </td>
+                                    <td style="border: 1px solid #000; padding: 6px; vertical-align: middle;">
+                                        <div style="font-weight: bold;"><t t-esc="doc.name"/></div>
+                                        <div style="font-size: 10pt; color: #555; margin-top: 2px;">
+                                            Tính chất: <span t-esc="dict(doc._fields['task_nature'].selection).get(doc.task_nature, '')"/>
+                                            | Chu kỳ: <span t-esc="dict(doc._fields['cycle'].selection).get(doc.cycle, '')"/>
+                                        </div>
+                                        <t t-if="doc.notes">
+                                            <div style="font-size: 9.5pt; font-style: italic; color: #333; margin-top: 2px;">
+                                                Yêu cầu: <span t-esc="doc.notes"/>
+                                            </div>
+                                        </t>
+                                    </td>
+                                    <td style="border: 1px solid #000; padding: 6px; vertical-align: middle; text-align: center;">
+                                        <span style="font-weight: bold;" t-esc="doc.lecturer_id.name"/><br/>
+                                        <small style="color: #666;" t-esc="doc.lecturer_id.lecturer_code"/>
+                                    </td>
+                                    <td style="border: 1px solid #000; padding: 6px; vertical-align: middle;">
+                                        <t t-if="doc.assistant_ids">
+                                            <t t-foreach="doc.assistant_ids" t-as="ast">
+                                                <div>- <span t-esc="ast.name"/></div>
+                                            </t>
+                                        </t>
+                                        <t t-else="">
+                                            <span style="font-style: italic; color: #888;">Không</span>
+                                        </t>
+                                    </td>
+                                    <td style="border: 1px solid #000; padding: 6px; vertical-align: middle; text-align: center;">
+                                        <span t-esc="doc.supervisor_id.name"/>
+                                    </td>
+                                    <td style="border: 1px solid #000; padding: 6px; vertical-align: middle; text-align: right; font-weight: bold;">
+                                        <t t-esc="f'{doc.standard_hours:.1f}'"/>h
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+
+                    <!-- KHU VỰC KÝ TÊN VÀ XÁC NHẬN CHUẨN THỂ THỨC -->
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 30px; page-break-inside: avoid;">
+                        <tr>
+                            <td style="width: 45%; vertical-align: top;">
+                                <div style="font-weight: bold; font-size: 11pt; text-decoration: underline; margin-bottom: 4px;">Nơi nhận:</div>
+                                <div style="font-size: 10pt;">- Ban Giám hiệu (để b/cáo);</div>
+                                <div style="font-size: 10pt;">- Cán bộ, Giảng viên trong Khoa (để t/hiện);</div>
+                                <div style="font-size: 10pt;">- Lưu: VP Khoa.</div>
+                            </td>
+                            <td style="width: 55%; text-align: center; vertical-align: top;">
+                                <div style="font-size: 12pt; font-weight: bold; text-transform: uppercase;">TRƯỞNG KHOA</div>
+                                <div style="font-size: 11pt; font-style: italic; margin-bottom: 60px;">(Ký, ghi rõ họ tên và đóng dấu)</div>
+                                <div style="font-weight: bold; font-size: 12pt;">
+                                    <t t-if="docs and docs[0].supervisor_id">
+                                        <span t-esc="docs[0].supervisor_id.name"/>
+                                    </t>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>
+

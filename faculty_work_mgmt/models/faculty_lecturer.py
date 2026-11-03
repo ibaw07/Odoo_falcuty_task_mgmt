@@ -256,34 +256,62 @@ class FacultyLecturer(models.Model):
     def _compute_criteria_stats(self):
         """
         Tổng hợp giờ chuẩn thực tế từ Sổ cái Giờ chuẩn trung tâm qua _read_group.
-        Tối ưu hóa tuyệt đối, chống N+1 query.
+        Một lần truy vấn duy nhất cho toàn bộ recordset, chống N+1 query.
+        Chỉ tính các dòng có date <= today (buổi/nhiệm vụ đã diễn ra).
         """
-        for rec in self:
-            domain = [('lecturer_id', '=', rec.id)]
-            if rec.active_academic_year_id:
-                domain.append(('academic_year_id', '=', rec.active_academic_year_id.id))
+        if not self:
+            return
 
-            # Query _read_group gom nhóm theo category và activity_type
-            grouped_data = self.env['faculty.hour.ledger']._read_group(
-                domain=domain,
-                groupby=['category', 'activity_type'],
-                aggregates=['standard_hours:sum']
-            )
+        today = fields.Date.today()
+
+        # Xây dựng domain chung cho toàn bộ recordset (1 SQL query duy nhất)
+        # Lọc theo active_academic_year_id nếu tất cả cùng năm học, nếu không bỏ qua
+        lecturer_ids = self.ids
+        year_ids = list(set(
+            rec.active_academic_year_id.id
+            for rec in self
+            if rec.active_academic_year_id
+        ))
+
+        domain = [
+            ('lecturer_id', 'in', lecturer_ids),
+            ('date', '<=', today),
+        ]
+        if len(year_ids) == 1:
+            domain.append(('academic_year_id', '=', year_ids[0]))
+        elif year_ids:
+            # Nhiều năm học khác nhau — phải gom thêm lecturer_id + academic_year_id
+            domain.append(('academic_year_id', 'in', year_ids))
+
+        grouped_data = self.env['faculty.hour.ledger']._read_group(
+            domain=domain,
+            groupby=['lecturer_id', 'category', 'activity_type'],
+            aggregates=['standard_hours:sum'],
+        )
+
+        # Index kết quả: {lecturer_id: {(category, activity_type): sum}}
+        stats = {}
+        for lecturer, category, activity_type, hours_sum in grouped_data:
+            lid = lecturer.id
+            stats.setdefault(lid, {})
+            stats[lid][(category, activity_type)] = hours_sum or 0.0
+
+        for rec in self:
+            rec_stats = stats.get(rec.id, {})
 
             actual_teaching_total = 0.0
             actual_teaching_lecture = 0.0
             actual_research_total = 0.0
             actual_other_total = 0.0
 
-            for category, activity_type, hours_sum in grouped_data:
-                hours = hours_sum or 0.0
-                if category == 'teaching':
+            for (cat, atype), hours in rec_stats.items():
+                if cat == 'teaching':
                     actual_teaching_total += hours
-                    if activity_type == 'lecture':
+                    if atype == 'lecture':
                         actual_teaching_lecture += hours
-                elif category == 'research':
+                elif cat == 'research':
                     actual_research_total += hours
-                elif category == 'other':
+                elif cat == 'other':
                     actual_other_total += hours
 
             rec.teaching_actual_lecture = actual_teaching_lecture
@@ -316,7 +344,8 @@ class FacultyLecturer(models.Model):
 
     def _sync_security_groups(self):
         """
-        Tự động đồng bộ các cờ phân quyền trực quan trên hồ sơ sang res.groups
+        Tự động đồng bộ các cờ phân quyền trực quan trên hồ sơ sang res.groups.
+        Gom thành 1 lần write duy nhất để tránh nhiều SQL UPDATE liên tiếp.
         """
         self.ensure_one()
         if not self.user_id:
@@ -326,26 +355,31 @@ class FacultyLecturer(models.Model):
         exam_group = self.env.ref('faculty_work_mgmt.group_faculty_exam', raise_if_not_found=False)
         dean_group = self.env.ref('faculty_work_mgmt.group_faculty_dean', raise_if_not_found=False)
 
-        user = self.user_id
+        cmds = []
 
         # Đồng bộ quyền Đào tạo
         if training_group:
             if self.can_edit_subjects or self.can_edit_classes:
-                user.sudo().write({'groups_id': [(4, training_group.id)]})
+                cmds.append((4, training_group.id))
             else:
-                user.sudo().write({'groups_id': [(3, training_group.id)]})
+                cmds.append((3, training_group.id))
 
         # Đồng bộ quyền Khảo thí
         if exam_group:
             if self.can_edit_exams:
-                user.sudo().write({'groups_id': [(4, exam_group.id)]})
+                cmds.append((4, exam_group.id))
             else:
-                user.sudo().write({'groups_id': [(3, exam_group.id)]})
+                cmds.append((3, exam_group.id))
 
-        # Đồng bộ quyền Quản lý/Nhân sự/Nhiệm vụ
+        # Đồng bộ quyền Quản lý/Nhân sự/Nhiệm vụ Khoa
         if dean_group:
             if self.can_edit_faculty_tasks or self.can_manage_hr:
-                user.sudo().write({'groups_id': [(4, dean_group.id)]})
+                cmds.append((4, dean_group.id))
+            else:
+                cmds.append((3, dean_group.id))
+
+        if cmds:
+            self.user_id.sudo().write({'groups_id': cmds})
 
     def action_check_promotion_reminders(self):
         """
@@ -399,6 +433,8 @@ class FacultyLecturerResumeLine(models.Model):
     name = fields.Char(string='Nội dung / Chuyên ngành / Tên đề tài / Tên giải thưởng', required=True)
     role = fields.Char(string='Vai trò / Chức danh / Cương vị', placeholder='VD: Chủ nhiệm, Thư ký, Học viên...')
     result = fields.Char(string='Kết quả / Xếp loại / Số quyết định', placeholder='VD: Xuất sắc, Đạt loại Giỏi, Bằng số 12345...')
+    source_research_id = fields.Many2one('faculty.research.work', string='Công trình NCKH nguồn', index=True, ondelete='set null',
+                                         help='Liên kết ngược về công trình NCKH gốc để chống tạo trùng khi duyệt lại.')
 
 
 class FacultyLecturerPublication(models.Model):
@@ -418,6 +454,8 @@ class FacultyLecturerPublication(models.Model):
         ('conference', 'Kỷ yếu Hội thảo Khoa học'),
     ], string='Phân loại xuất bản', default='national_journal', required=True)
     impact_factor_rank = fields.Char(string='Chỉ số IF / Điểm HĐGSNN', placeholder='VD: Q1, Q2, 0.75 điểm')
+    source_research_id = fields.Many2one('faculty.research.work', string='Công trình NCKH nguồn', index=True, ondelete='set null',
+                                         help='Liên kết ngược về công trình NCKH gốc để chống tạo trùng khi duyệt lại.')
 
     # Cờ giới hạn tối đa 5 công trình tiêu biểu
     is_top_selected = fields.Boolean(
@@ -426,13 +464,16 @@ class FacultyLecturerPublication(models.Model):
         help='Tích chọn tối đa 5 công trình khoa học tiêu biểu nhất để xuất in Lý lịch khoa học.'
     )
 
-    @api.constrains('is_top_selected', 'lecturer_id')
+    @api.constrains('is_top_selected')
     def _check_top_selected_limit(self):
         for rec in self:
             if rec.is_top_selected and rec.lecturer_id:
-                count = self.search_count([
-                    ('lecturer_id', '=', rec.lecturer_id.id),
-                    ('is_top_selected', '=', True),
-                ])
+                # Đếm trực tiếp trên quan hệ One2many đã loaded (bao gồm cả bản ghi mới chưa flush)
+                count = len(rec.lecturer_id.publication_ids.filtered('is_top_selected'))
                 if count > 5:
-                    raise ValidationError(_('Mỗi giảng viên chỉ được chọn tối đa 5 công trình tiêu biểu để xuất Lý lịch Khoa học!'))
+                    raise ValidationError(_(
+                        'Giảng viên "%(name)s" đã chọn %(count)d công trình tiêu biểu. '
+                        'Tối đa chỉ được 5 công trình!',
+                        name=rec.lecturer_id.name,
+                        count=count,
+                    ))

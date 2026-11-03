@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- =================================================================== -->
+    <!-- 1. LỊCH THI & KHẢO THÍ CHUYÊN BIỆT (faculty.class.course)          -->
+    <!-- =================================================================== -->
+    <record id="view_faculty_exam_schedule_list" model="ir.ui.view">
+        <field name="name">faculty.class.course.exam.list</field>
+        <field name="model">faculty.class.course</field>
+        <field name="arch" type="xml">
+            <list string="Lịch thi &amp; Khảo thí" decoration-success="exam_done" decoration-warning="not exam_done and exam_date">
+                <field name="exam_date"/>
+                <field name="exam_session"/>
+                <field name="course_id"/>
+                <field name="class_id"/>
+                <field name="semester_id"/>
+                <field name="exam_format"/>
+                <field name="total_student_count" string="Số bài thi"/>
+                <field name="grading_deadline"/>
+                <field name="head_lecturer_id" string="GV quản lý"/>
+                <field name="exam_plan_state" widget="badge" decoration-warning="exam_plan_state == 'draft'" decoration-success="exam_plan_state == 'approved'"/>
+                <field name="exam_done" widget="boolean" string="Đã hoàn thành"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_faculty_exam_schedule_form" model="ir.ui.view">
+        <field name="name">faculty.class.course.exam.form</field>
+        <field name="model">faculty.class.course</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <form string="Kế hoạch Lịch thi &amp; Khảo thí">
+                <header>
+                    <button name="action_back_to_list" string="Quay lại danh sách" type="object" class="btn-secondary" icon="fa-arrow-left"/>
+                    <button name="action_approve_exam_plan" string="Trưởng khoa Duyệt Kế hoạch đầu năm" type="object" class="btn-primary" invisible="exam_plan_state == 'approved'" groups="faculty_work_mgmt.group_faculty_dean"/>
+                    <button name="action_finish_exam" string="Hoàn thành Khảo thí &amp; Kết chuyển Giờ" type="object" class="btn-success" invisible="exam_done" confirm="Xác nhận hoàn thành khảo thí? Toàn bộ giờ chuẩn Coi thi, Chấm thi 1 &amp; 2, Chấm kiểm tra sẽ tự động ghi vào Sổ cái!"/>
+                    <field name="exam_plan_state" widget="badge" decoration-warning="exam_plan_state == 'draft'" decoration-success="exam_plan_state == 'approved'"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="course_id" string="Học phần khảo thí"/>
+                        <h1>
+                            <field name="course_id" readonly="1"/>
+                        </h1>
+                        <h3>
+                            <field name="class_id" readonly="1"/>
+                        </h3>
+                    </div>
+                    <group>
+                        <group string="Lịch tổ chức thi">
+                            <field name="exam_date"/>
+                            <field name="exam_session"/>
+                            <field name="exam_format"/>
+                            <field name="question_source"/>
+                            <field name="total_student_count" string="Tổng sĩ số bài thi"/>
+                        </group>
+                        <group string="Lịch Chấm thi &amp; Giáo vụ nhập">
+                            <field name="grading_deadline" string="Hạn nộp bài chấm thi &amp; chấm kiểm tra"/>
+                            <field name="head_lecturer_id" readonly="1" string="Giảng viên quản lý theo dõi"/>
+                            <field name="paper_locked" string="Đã hoàn thành ra đề" widget="boolean"/>
+                            <field name="exam_done" string="Đã hoàn thành toàn bộ khảo thí" widget="boolean"/>
+                        </group>
+                    </group>
+
+                    <div class="alert alert-info py-2" role="alert">
+                        <strong>Quy định khảo thí:</strong> Cán bộ coi thi được tự động ẩn nếu hình thức thi là Tiểu luận. Cán bộ chấm 1 và chấm 2 hưởng 100% theo sĩ số bài thi (không chia đôi). Cán bộ chấm kiểm tra thẩm định số bài theo Bảng quy tắc khảo thí động của Khoa.
+                    </div>
+
+                    <!-- Bảng phân công khảo thí hàng dọc -->
+                    <notebook>
+                        <page string="Bảng Phân công Cán bộ Khảo thí" name="assignments">
+                            <field name="exam_assignment_ids">
+                                <list editable="bottom">
+                                    <field name="role" string="Vai trò khảo thí"/>
+                                    <field name="lecturer_id" string="Cán bộ khảo thí"/>
+                                    <field name="paper_count" string="Số bài / Buổi"/>
+                                    <field name="unit_rate" readonly="1" string="Đơn giá quy chuẩn"/>
+                                    <field name="standard_hours" readonly="1" string="Giờ chuẩn quy đổi"/>
+                                    <field name="notes" string="Ghi chú"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_faculty_exam_schedule" model="ir.actions.act_window">
+        <field name="name">Lịch thi &amp; Khảo thí</field>
+        <field name="res_model">faculty.class.course</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_faculty_exam_schedule_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_faculty_exam_schedule_form')})]"/>
+        <field name="context">{'search_default_group_semester': 1}</field>
+    </record>
+
+    <!-- =================================================================== -->
+    <!-- 2. HƯỚNG DẪN KHÓA LUẬN / LUẬN VĂN / NCKH SV (faculty.thesis.guidance)-->
+    <!-- =================================================================== -->
+    <record id="view_faculty_thesis_guidance_list" model="ir.ui.view">
+        <field name="name">faculty.thesis.guidance.list</field>
+        <field name="model">faculty.thesis.guidance</field>
+        <field name="arch" type="xml">
+            <list string="Hướng dẫn Khóa luận &amp; NCKH">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="academic_year_id"/>
+                <field name="guidance_level"/>
+                <field name="student_names"/>
+                <field name="lecturer_id"/>
+                <field name="role"/>
+                <field name="standard_hours"/>
+                <field name="defense_date"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-warning="state == 'waiting_dean'" decoration-success="state == 'approved'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_faculty_thesis_guidance_form" model="ir.ui.view">
+        <field name="name">faculty.thesis.guidance.form</field>
+        <field name="model">faculty.thesis.guidance</field>
+        <field name="arch" type="xml">
+            <form string="Hướng dẫn Khóa luận / Luận văn">
+                <header>
+                    <button name="action_back_to_list" string="Quay lại danh sách" type="object" class="btn-secondary" icon="fa-arrow-left"/>
+                    <button name="action_submit" string="Gửi duyệt" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Phê duyệt &amp; Ghi Sổ cái" type="object" class="btn-success" invisible="state != 'waiting_dean'" groups="faculty_work_mgmt.group_faculty_dean"/>
+                    <button name="action_reset_draft" string="Chuyển về Dự thảo" type="object" invisible="state == 'draft'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,waiting_dean,approved"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Tên đề tài / Nội dung hướng dẫn"/>
+                        <h1>
+                            <field name="name" placeholder="VD: Nghiên cứu ứng dụng AI trong Quản trị đại học"/>
+                        </h1>
+                        <h3>
+                            <field name="code" placeholder="Mã: KL-2025-01"/>
+                        </h3>
+                    </div>
+                    <group>
+                        <group string="Phân loại &amp; Sinh viên">
+                            <field name="academic_year_id" options="{'no_create': True}"/>
+                            <field name="guidance_level"/>
+                            <field name="student_names"/>
+                            <field name="student_code"/>
+                            <field name="student_count"/>
+                        </group>
+                        <group string="Phân công Giảng viên &amp; Giờ chuẩn">
+                            <field name="lecturer_id" options="{'no_create': True}"/>
+                            <field name="role"/>
+                            <field name="standard_hours"/>
+                            <field name="defense_date"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Ghi chú &amp; Quyết định phân công" name="notes">
+                            <field name="notes" placeholder="Số quyết định giao nhiệm vụ hướng dẫn, hội đồng bảo vệ..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_faculty_thesis_guidance" model="ir.actions.act_window">
+        <field name="name">Hướng dẫn Tốt nghiệp &amp; NCKH SV</field>
+        <field name="res_model">faculty.thesis.guidance</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- =================================================================== -->
+    <!-- 3. THỰC HÀNH & THỰC TẬP (faculty.internship.project)                 -->
+    <!-- =================================================================== -->
+    <record id="view_faculty_internship_project_list" model="ir.ui.view">
+        <field name="name">faculty.internship.project.list</field>
+        <field name="model">faculty.internship.project</field>
+        <field name="arch" type="xml">
+            <list string="Thực hành &amp; Thực tập">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="academic_year_id"/>
+                <field name="course_ids" widget="many2many_tags"/>
+                <field name="host_organization"/>
+                <field name="area_location"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="total_budget"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-warning="state == 'waiting_dean'" decoration-success="state == 'approved'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_faculty_internship_project_form" model="ir.ui.view">
+        <field name="name">faculty.internship.project.form</field>
+        <field name="model">faculty.internship.project</field>
+        <field name="arch" type="xml">
+            <form string="Kế hoạch Thực hành &amp; Thực tập">
+                <header>
+                    <button name="action_back_to_list" string="Quay lại danh sách" type="object" class="btn-secondary" icon="fa-arrow-left"/>
+                    <button name="action_submit" string="Gửi duyệt Kế hoạch" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Phê duyệt &amp; Kết chuyển Giờ" type="object" class="btn-success" invisible="state != 'waiting_dean'" groups="faculty_work_mgmt.group_faculty_dean"/>
+                    <button name="action_reset_draft" string="Chuyển về Dự thảo" type="object" invisible="state == 'draft'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,waiting_dean,approved"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Tên đợt Thực hành / Thực tập"/>
+                        <h1>
+                            <field name="name" placeholder="VD: Đợt thực tập thực tế chuyên ngành CNTT tại Doanh nghiệp"/>
+                        </h1>
+                        <h3>
+                            <field name="code" placeholder="Mã: TT-2025-01"/>
+                        </h3>
+                    </div>
+                    <group>
+                        <group string="Học phần &amp; Năm học">
+                            <field name="academic_year_id" options="{'no_create': True}"/>
+                            <!-- Many2many: chọn nhiều hơn 1 học phần liên quan -->
+                            <field name="course_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                        </group>
+                        <group string="Đơn vị &amp; Địa bàn tiếp nhận">
+                            <!-- Không bắt buộc -->
+                            <field name="host_organization"/>
+                            <!-- Thêm trường Địa bàn -->
+                            <field name="area_location"/>
+                        </group>
+                    </group>
+
+                    <!-- KHU VỰC NỘI DUNG ĐÚNG 3 TAB: THÀNH PHẦN - TÀI LIỆU - DỰ TOÁN -->
+                    <notebook>
+                        <!-- TAB 1: THÀNH PHẦN -->
+                        <page string="1. Thành phần tham gia" name="participants">
+                            <field name="participant_ids">
+                                <list editable="bottom">
+                                    <field name="lecturer_id" string="Cán bộ / Giảng viên"/>
+                                    <field name="role" string="Vai trò trong đoàn"/>
+                                    <field name="student_count" string="Số SV phụ trách"/>
+                                    <field name="days_count" string="Số ngày"/>
+                                    <field name="standard_hours" string="Giờ chuẩn quy đổi"/>
+                                    <field name="notes" string="Ghi chú"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- TAB 2: TÀI LIỆU -->
+                        <page string="2. Tài liệu &amp; Kế hoạch đính kèm" name="documents">
+                            <field name="document_ids">
+                                <list editable="bottom">
+                                    <field name="name" string="Tên văn bản / Kế hoạch"/>
+                                    <field name="attachment_filename" invisible="1"/>
+                                    <field name="attachment_file" filename="attachment_filename" widget="binary" string="Tệp đính kèm (Word/PDF)"/>
+                                    <field name="notes" string="Ghi chú"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- TAB 3: DỰ TOÁN -->
+                        <page string="3. Dự toán kinh phí" name="budget">
+                            <div class="row mb-3">
+                                <div class="col-md-8 d-flex align-items-center">
+                                    <field name="payment_regulation_id" options="{'no_create': True}" placeholder="Chọn Quy định thanh toán áp dụng..."/>
+                                    <button name="action_load_budget_lines" string="Nạp mục chi theo quy định" type="object" class="btn btn-sm btn-info ms-2" icon="fa-refresh"/>
+                                </div>
+                            </div>
+                            <field name="budget_line_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name" string="Mục chi"/>
+                                    <field name="unit" string="Đơn vị tính"/>
+                                    <field name="standard_rate" string="Định mức / Đơn giá (VNĐ)"/>
+                                    <field name="quantity" string="Số lượng"/>
+                                    <field name="subtotal" string="Thành tiền (VNĐ)"/>
+                                    <field name="notes" string="Ghi chú"/>
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer oe_right">
+                                <field name="total_budget" widget="monetary" string="Tổng cộng kinh phí dự toán:"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_faculty_internship_project" model="ir.actions.act_window">
+        <field name="name">Thực hành &amp; Thực tập</field>
+        <field name="res_model">faculty.internship.project</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- =================================================================== -->
+    <!-- MENU ITEMS FOR EXAM & INTERNSHIP                                   -->
+    <!-- =================================================================== -->
+    <menuitem id="menu_faculty_exam_schedule"
+              name="Lịch thi &amp; Khảo thí"
+              parent="faculty_work_mgmt.menu_faculty_exam_internship_root"
+              action="action_faculty_exam_schedule"
+              sequence="10"/>
+
+    <menuitem id="menu_faculty_thesis_guidance"
+              name="Hướng dẫn Tốt nghiệp &amp; NCKH SV"
+              parent="faculty_work_mgmt.menu_faculty_exam_internship_root"
+              action="action_faculty_thesis_guidance"
+              sequence="20"/>
+
+    <menuitem id="menu_faculty_internship_project"
+              name="Thực hành &amp; Thực tập"
+              parent="faculty_work_mgmt.menu_faculty_exam_internship_root"
+              action="action_faculty_internship_project"
+              sequence="30"/>
+</odoo>

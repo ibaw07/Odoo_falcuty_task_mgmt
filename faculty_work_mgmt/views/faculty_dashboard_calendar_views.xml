@@ -1,0 +1,374 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ======================================================================= -->
+    <!-- 1. BẢNG ĐIỀU HÀNH THÔNG MINH REAL-TIME (faculty.dashboard)              -->
+    <!-- ======================================================================= -->
+    <record id="view_faculty_dashboard_form" model="ir.ui.view">
+        <field name="name">faculty.dashboard.form</field>
+        <field name="model">faculty.dashboard</field>
+        <field name="arch" type="xml">
+            <form string="Bảng Điều hành Thông minh Real-time" create="false" edit="false" delete="false">
+                <header>
+                    <button name="action_refresh_dashboard"
+                            string="Làm mới dữ liệu (Real-time)"
+                            type="object"
+                            class="btn-primary"
+                            icon="fa-refresh"/>
+                    <button name="action_open_calendar"
+                            string="Lịch Công tác Chung Toàn Khoa"
+                            type="object"
+                            class="btn-secondary"
+                            icon="fa-calendar"/>
+                    <button name="action_open_excel_wizard"
+                            string="Xuất Báo cáo Excel 2 Sheet"
+                            type="object"
+                            class="btn-outline-primary"
+                            icon="fa-file-excel-o"/>
+                    <field name="is_management" invisible="1"/>
+                </header>
+                <sheet>
+                    <!-- Tiêu đề & Thông tin truy vấn -->
+                    <div class="oe_title mb-3">
+                        <h1 class="text-primary font-weight-bold">
+                            <i class="fa fa-tachometer mr-2"/>
+                            BẢNG ĐIỀU HÀNH THÔNG MINH KHOA ĐÀO TẠO
+                        </h1>
+                        <div class="d-flex align-items-center mt-1">
+                            <span class="badge badge-primary mr-2 p-2" invisible="not is_management">
+                                <i class="fa fa-shield mr-1"/> Phân hệ Lãnh đạo &amp; Giáo vụ Khoa (Xem Toàn Khoa)
+                            </span>
+                            <span class="badge badge-info mr-2 p-2" invisible="is_management">
+                                <i class="fa fa-user mr-1"/> Phân hệ Giảng viên Cá nhân (<field name="lecturer_id" readonly="1"/>)
+                            </span>
+                            <span class="text-muted ml-3">
+                                <i class="fa fa-clock-o mr-1"/> Thời điểm truy vấn: <field name="date" readonly="1"/> | Năm học: <field name="academic_year_id" readonly="1"/>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Khối 4 Thẻ KPI Thông minh Tóm tắt -->
+                    <div class="row mb-4">
+                        <div class="col-md-3 col-sm-6 mb-2">
+                            <div class="card p-3 text-center border-0 shadow-sm" style="background-color: #f3e5f5; border-left: 5px solid #800080 !important; border-radius: 8px;">
+                                <div class="text-uppercase small font-weight-bold" style="color: #800080;">
+                                    <i class="fa fa-exclamation-triangle mr-1"/> Quá hạn hoàn thành
+                                </div>
+                                <div class="font-weight-bold mt-1" style="font-size: 28px; color: #800080;">
+                                    <field name="count_overdue" readonly="1"/>
+                                </div>
+                                <div class="small text-muted">Công việc / Đề tài / Checklist</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 col-sm-6 mb-2">
+                            <div class="card p-3 text-center border-0 shadow-sm" style="background-color: #ffebee; border-left: 5px solid #dc3545 !important; border-radius: 8px;">
+                                <div class="text-uppercase small font-weight-bold text-danger">
+                                    <i class="fa fa-clock-o mr-1"/> Khẩn cấp &amp; Cần sửa
+                                </div>
+                                <div class="font-weight-bold text-danger mt-1" style="font-size: 28px;">
+                                    <field name="count_urgent" readonly="1"/>
+                                </div>
+                                <div class="small text-muted">Hạn &lt;= 3 ngày hoặc Bị trả lại</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 col-sm-6 mb-2">
+                            <div class="card p-3 text-center border-0 shadow-sm" style="background-color: #fff8e1; border-left: 5px solid #ff9800 !important; border-radius: 8px;">
+                                <div class="text-uppercase small font-weight-bold" style="color: #e65100;">
+                                    <i class="fa fa-birthday-cake mr-1"/> Nhắc lịch Sinh nhật
+                                </div>
+                                <div class="font-weight-bold mt-1" style="font-size: 28px; color: #e65100;">
+                                    <field name="count_birthdays" readonly="1"/>
+                                </div>
+                                <div class="small text-muted">Trong vòng 7 ngày tới</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 col-sm-6 mb-2">
+                            <div class="card p-3 text-center border-0 shadow-sm" style="background-color: #e3f2fd; border-left: 5px solid #007bff !important; border-radius: 8px;">
+                                <div class="text-uppercase small font-weight-bold text-primary">
+                                    <i class="fa fa-line-chart mr-1"/> Cảnh báo Nâng bậc lương
+                                </div>
+                                <div class="font-weight-bold text-primary mt-1" style="font-size: 28px;">
+                                    <field name="count_promotions" readonly="1"/>
+                                </div>
+                                <div class="small text-muted">Trong vòng 60 ngày tới</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3 Tab Nghiệp vụ Cốt lõi -->
+                    <notebook>
+                        <!-- TAB 1: CẢNH BÁO THEO VAI TRÒ -->
+                        <page string="1. Cảnh báo Khẩn cấp &amp; Quá hạn" name="tab_alerts">
+                            <div class="alert alert-info py-2 mb-2" role="alert" invisible="is_management">
+                                <i class="fa fa-info-circle mr-1"/>
+                                Danh sách này chỉ hiển thị các công việc, đề tài NCKH và bước Checklist học vụ của <strong>chính cá nhân bạn</strong> đang ở trạng thái Quá hạn (Màu Tím) hoặc Khẩn cấp &lt;= 3 ngày / Bị trả lại yêu cầu sửa (Màu Đỏ).
+                            </div>
+                            <div class="alert alert-warning py-2 mb-2" role="alert" invisible="not is_management">
+                                <i class="fa fa-bullhorn mr-1"/>
+                                <strong>Chế độ Quản lý Toàn Khoa:</strong> Hiển thị toàn bộ các công việc, đề tài và checklist quá hạn hoặc khẩn cấp của toàn thể cán bộ giảng viên trong Khoa.
+                            </div>
+
+                            <field name="alert_ids" readonly="1">
+                                <list decoration-danger="alert_type in ('urgent', 'revision')">
+                                    <field name="deadline"/>
+                                    <field name="alert_type" widget="badge" decoration-danger="alert_type in ('urgent', 'revision')"/>
+                                    <field name="name"/>
+                                    <field name="source_type"/>
+                                    <field name="lecturer_id"/>
+                                    <button name="action_open_record"
+                                            string="Mở xử lý"
+                                            type="object"
+                                            icon="fa-external-link"
+                                            class="btn-sm btn-outline-primary"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- TAB 2: THÔNG TIN CHUNG TOÀN KHOA -->
+                        <page string="2. Thông tin Chung (Sinh nhật &amp; Nâng bậc lương)" name="tab_faculty_info">
+                            <div class="row">
+                                <!-- Cột 1: Nhắc lịch Sinh nhật -->
+                                <div class="col-md-6">
+                                    <div class="p-2 bg-light font-weight-bold border-bottom mb-2 text-dark">
+                                        <i class="fa fa-birthday-cake text-warning mr-1"/>
+                                        NHẮC LỊCH SINH NHẬT CÁN BỘ GIẢNG VIÊN (TRƯỚC 7 NGÀY &amp; HÔM NAY)
+                                    </div>
+                                    <field name="birthday_ids" readonly="1">
+                                        <list>
+                                            <field name="lecturer_id"/>
+                                            <field name="birthday_display"/>
+                                            <field name="days_until"/>
+                                            <field name="is_today" widget="badge" decoration-warning="is_today == True"/>
+                                            <field name="phone"/>
+                                            <field name="email"/>
+                                        </list>
+                                    </field>
+                                </div>
+
+                                <!-- Cột 2: Cảnh báo Nâng bậc lương -->
+                                <div class="col-md-6">
+                                    <div class="p-2 bg-light font-weight-bold border-bottom mb-2 text-dark">
+                                        <i class="fa fa-level-up text-primary mr-1"/>
+                                        CẢNH BÁO NÂNG BẬC LƯƠNG 16 BẬC NGẠCH (TRƯỚC 60 NGÀY)
+                                    </div>
+                                    <field name="promotion_ids" readonly="1">
+                                        <list>
+                                            <field name="lecturer_id"/>
+                                            <field name="current_rank_display"/>
+                                            <field name="next_rank_display"/>
+                                            <field name="next_rank_date"/>
+                                            <field name="days_to_promotion" widget="badge" decoration-danger="days_to_promotion &lt;= 0" decoration-warning="days_to_promotion &gt; 0"/>
+                                        </list>
+                                    </field>
+                                </div>
+                            </div>
+                        </page>
+
+                        <!-- TAB 3: THEO DÕI THỪA / THIẾU GIỜ CHUẨN REAL-TIME -->
+                        <page string="3. Bảng Theo dõi Thừa / Thiếu Giờ chuẩn Real-time" name="tab_realtime_hours">
+                            <div class="alert alert-secondary py-2 mb-2" role="alert">
+                                <i class="fa fa-database mr-1"/>
+                                <strong>Cơ chế Thời gian thực:</strong> Truy vấn trực tiếp từ Sổ cái Giờ chuẩn (<code>faculty.hour.ledger</code>) bằng hàm <code>_read_group</code>. Chỉ cộng dồn các hoạt động và buổi giảng đã thực sự diễn ra tính đến ngày hôm nay (<code>date &lt;= fields.Date.context_today(self)</code>), so sánh trực tiếp với Định mức sau giảm của từng giảng viên.
+                            </div>
+
+                            <field name="hour_ids" readonly="1">
+                                <list decoration-success="total_balance &gt;= 0" decoration-danger="total_balance &lt; 0">
+                                    <field name="lecturer_id"/>
+                                    <field name="academic_title_display"/>
+                                    <field name="teaching_norm_reduced"/>
+                                    <field name="teaching_actual"/>
+                                    <field name="teaching_balance"/>
+                                    <field name="research_norm_reduced"/>
+                                    <field name="research_actual"/>
+                                    <field name="research_balance"/>
+                                    <field name="other_norm_reduced"/>
+                                    <field name="other_actual"/>
+                                    <field name="other_balance"/>
+                                    <field name="total_balance" decoration-bf="1"/>
+                                    <field name="status" widget="badge" decoration-success="status == 'surplus'" decoration-danger="status == 'deficit'" decoration-info="status == 'balanced'"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Server Action mở Bảng Điều hành Thông minh Real-time -->
+    <record id="action_faculty_dashboard_server" model="ir.actions.server">
+        <field name="name">Bảng Điều hành Real-time</field>
+        <field name="model_id" ref="model_faculty_dashboard"/>
+        <field name="state">code</field>
+        <field name="code">
+action = model.action_open_dashboard()
+        </field>
+    </record>
+
+
+    <!-- ======================================================================= -->
+    <!-- 2. LỊCH CÔNG TÁC CHUNG TOÀN KHOA (faculty.calendar.event)              -->
+    <!-- ======================================================================= -->
+    <!-- Calendar View có Popover / Hover Popup & Bộ lọc 5 nhóm màu bên phải -->
+    <record id="view_faculty_calendar_event_calendar" model="ir.ui.view">
+        <field name="name">faculty.calendar.event.calendar</field>
+        <field name="model">faculty.calendar.event</field>
+        <field name="arch" type="xml">
+            <calendar string="Lịch Công tác Chung Toàn Khoa"
+                      date_start="start_datetime"
+                      date_stop="stop_datetime"
+                      mode="month"
+                      color="event_category"
+                      event_open_popup="true"
+                      quick_create="false">
+                <field name="name"/>
+                <field name="event_category" filters="1"/>
+                <field name="lecturer_id" avatar_field="avatar_128"/>
+                <field name="location"/>
+                <field name="course_class_display"/>
+                <field name="notes"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- List View -->
+    <record id="view_faculty_calendar_event_list" model="ir.ui.view">
+        <field name="name">faculty.calendar.event.list</field>
+        <field name="model">faculty.calendar.event</field>
+        <field name="arch" type="xml">
+            <list string="Lịch Công tác Chung Toàn Khoa"
+                  default_order="start_datetime desc"
+                  decoration-info="event_category == 'teaching'"
+                  decoration-warning="event_category == 'exam'"
+                  decoration-success="event_category == 'guest_speaker'"
+                  decoration-danger="event_category == 'dept_event_task'">
+                <header>
+                    <button name="action_sync_all_events"
+                            string="Đồng bộ lại Sự kiện Toàn Khoa"
+                            type="object"
+                            class="btn-primary"
+                            icon="fa-refresh"/>
+                </header>
+                <field name="start_datetime"/>
+                <field name="stop_datetime"/>
+                <field name="event_category" widget="badge"
+                       decoration-info="event_category == 'teaching'"
+                       decoration-warning="event_category == 'exam'"
+                       decoration-success="event_category == 'guest_speaker'"
+                       decoration-danger="event_category == 'dept_event_task'"
+                       decoration-muted="event_category == 'birthday'"/>
+                <field name="name"/>
+                <field name="location"/>
+                <field name="lecturer_id"/>
+                <field name="course_class_display"/>
+                <field name="duration" widget="float_time"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_faculty_calendar_event_form" model="ir.ui.view">
+        <field name="name">faculty.calendar.event.form</field>
+        <field name="model">faculty.calendar.event</field>
+        <field name="arch" type="xml">
+            <form string="Sự kiện Lịch Công tác Khoa">
+                <header>
+                    <button name="action_open_source"
+                            string="Mở bản ghi gốc"
+                            type="object"
+                            class="btn-primary"
+                            icon="fa-external-link"
+                            invisible="not res_model"/>
+                    <button name="action_sync_all_events"
+                            string="Đồng bộ Sự kiện"
+                            type="object"
+                            class="btn-secondary"
+                            icon="fa-refresh"/>
+                </header>
+                <sheet>
+                    <div class="oe_title mb-2">
+                        <label for="name" string="Tên sự kiện / Buổi công tác"/>
+                        <h1>
+                            <field name="name" placeholder="VD: [Giảng dạy] Lập trình Web - Buổi 3"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Phân loại &amp; Thời gian">
+                            <field name="event_category" widget="badge"
+                                   decoration-info="event_category == 'teaching'"
+                                   decoration-warning="event_category == 'exam'"
+                                   decoration-success="event_category == 'guest_speaker'"
+                                   decoration-danger="event_category == 'dept_event_task'"
+                                   decoration-muted="event_category == 'birthday'"/>
+                            <field name="start_datetime"/>
+                            <field name="stop_datetime"/>
+                            <field name="duration" widget="float_time"/>
+                            <field name="all_day"/>
+                        </group>
+                        <group string="Địa điểm &amp; Nhân sự">
+                            <field name="location"/>
+                            <field name="lecturer_id"/>
+                            <field name="course_id"/>
+                            <field name="student_class_id"/>
+                            <field name="course_class_display" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Ghi chú chi tiết">
+                        <field name="notes" placeholder="Ghi chú nội dung, phòng học, người đứng lớp, báo cáo viên..."/>
+                    </group>
+                    <group string="Liên kết hệ thống" groups="base.group_no_one">
+                        <field name="res_model" readonly="1"/>
+                        <field name="res_id" readonly="1"/>
+                        <field name="event_key" readonly="1"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_faculty_calendar_event_search" model="ir.ui.view">
+        <field name="name">faculty.calendar.event.search</field>
+        <field name="model">faculty.calendar.event</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm Lịch Công tác Khoa">
+                <field name="name"/>
+                <field name="lecturer_id"/>
+                <field name="course_id"/>
+                <field name="student_class_id"/>
+                <field name="location"/>
+                <separator/>
+                <filter string="Giảng dạy (Xanh dương)" name="filter_teaching" domain="[('event_category', '=', 'teaching')]"/>
+                <filter string="Khảo thí &amp; Lịch thi (Cam)" name="filter_exam" domain="[('event_category', '=', 'exam')]"/>
+                <filter string="Báo cáo thực tế (Xanh lá)" name="filter_guest_speaker" domain="[('event_category', '=', 'guest_speaker')]"/>
+                <filter string="Sự kiện Khoa &amp; Hạn việc (Đỏ/Tím)" name="filter_dept_task" domain="[('event_category', '=', 'dept_event_task')]"/>
+                <filter string="Sinh nhật Cán bộ (Vàng)" name="filter_birthday" domain="[('event_category', '=', 'birthday')]"/>
+                <group expand="0" string="Gom nhóm">
+                    <filter string="Phân loại sự kiện" name="group_by_category" context="{'group_by': 'event_category'}"/>
+                    <filter string="Cán bộ Giảng viên" name="group_by_lecturer" context="{'group_by': 'lecturer_id'}"/>
+                    <filter string="Ngày bắt đầu" name="group_by_date" context="{'group_by': 'start_datetime:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Window Action cho Lịch Công tác Chung Toàn Khoa -->
+    <record id="action_faculty_calendar_event" model="ir.actions.act_window">
+        <field name="name">Lịch Công tác Chung Toàn Khoa</field>
+        <field name="res_model">faculty.calendar.event</field>
+        <field name="view_mode">calendar,list,form</field>
+        <field name="search_view_id" ref="view_faculty_calendar_event_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Chưa có sự kiện nào trong Lịch Công tác Chung Toàn Khoa!
+            </p>
+            <p>
+                Bấm nút <strong>"Đồng bộ lại Sự kiện Toàn Khoa"</strong> để tự động tổng hợp lịch giảng dạy, lịch thi, báo cáo viên thực tế, hạn chót công việc và sinh nhật cán bộ.
+            </p>
+        </field>
+    </record>
+</odoo>
+

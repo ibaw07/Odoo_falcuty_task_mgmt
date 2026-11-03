@@ -11,7 +11,7 @@
                 <field name="rank_id" string="Bậc lương"/>
                 <field name="position_title" string="Chức vụ"/>
 
-                <filter string="Sắp đến hạn nâng bậc (<= 60 ngày)" name="filter_promotion_soon" domain="[('is_promotion_soon', '=', True)]"/>
+                <filter string="Sắp đến hạn nâng bậc (&lt;= 60 ngày)" name="filter_promotion_soon" domain="[('is_promotion_soon', '=', True)]"/>
                 <filter string="Giáo sư / Phó Giáo sư" name="filter_professors" domain="[('academic_title', 'in', ['prof', 'assoc_prof'])]"/>
                 <filter string="Tiến sĩ / TSKH" name="filter_doctors" domain="[('academic_degree', 'in', ['doctor', 'doctor_science'])]"/>
 

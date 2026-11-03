@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_faculty_return_wizard_form" model="ir.ui.view">
+        <field name="name">faculty.return.wizard.form</field>
+        <field name="model">faculty.return.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Yêu cầu chỉnh sửa / trả lại">
+                <sheet>
+                    <group>
+                        <field name="reason" placeholder="Nhập lý do trả lại..."/>
+                        <field name="participant_ids" widget="many2many_tags" domain="[]"/>
+                        <field name="other_participant_ids" widget="many2many_tags" domain="[]"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_return" type="object" string="Gửi yêu cầu" class="btn-primary"/> <!-- close automatically -->
+                    <button special="cancel" string="Hủy" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action to open wizard from research and other work forms -->
+    <record id="action_faculty_return_wizard" model="ir.actions.act_window">
+        <field name="name">Yêu cầu chỉnh sửa / Trả lại</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">faculty.return.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <!-- for research -->
+        <field name="binding_view_types">form</field>
+        <field name="binding_model_id" eval=""/> <!-- placeholder, will be overridden by inheritance -->
+    </record>
+
+    <!-- Inherit button on research work form -->
+    <record id="faculty_research_work_form_inherit_return" model="ir.ui.view">
+        <field name="name">faculty.research.work.form.inherit.return</field>
+        <field name="model">faculty.research.work</field>
+        <field name="inherit_id" ref="faculty_work_mgmt.view_faculty_research_work_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="%(action_faculty_return_wizard)d" type="action" string="Yêu cầu chỉnh sửa / Trả lại" groups="base.group_user"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Inherit button on other work form -->
+    <record id="faculty_other_work_form_inherit_return" model="ir.ui.view">
+        <field name="name">faculty.other.work.form.inherit.return</field>
+        <field name="model">faculty.other.work</field>
+        <field name="inherit_id" ref="faculty_work_mgmt.view_faculty_other_work_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="%(action_faculty_return_wizard)d" type="action" string="Yêu cầu chỉnh sửa / Trả lại" groups="base.group_user"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

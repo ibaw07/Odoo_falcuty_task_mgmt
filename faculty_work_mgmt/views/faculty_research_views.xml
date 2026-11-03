@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- LIST VIEW: faculty.research.work -->
+    <record id="view_faculty_research_work_list" model="ir.ui.view">
+        <field name="name">faculty.research.work.list</field>
+        <field name="model">faculty.research.work</field>
+        <field name="arch" type="xml">
+            <list string="Công trình Nghiên cứu Khoa học" decoration-info="state == 'draft'" decoration-warning="state == 'waiting_dean'" decoration-success="state == 'approved'">
+                <field name="code" optional="show"/>
+                <field name="name"/>
+                <field name="research_type"/>
+                <field name="academic_year_id"/>
+                <field name="leader_id"/>
+                <field name="acceptance_date" optional="show"/>
+                <field name="acceptance_grade" optional="show"/>
+                <field name="total_hours" sum="Tổng giờ NCKH"/>
+                <field name="total_budget" sum="Tổng kinh phí (VNĐ)" widget="monetary" optional="hide"/>
+                <field name="library_review_state" widget="badge" decoration-warning="library_review_state == 'pending'" decoration-success="library_review_state == 'approved'" optional="show"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-warning="state == 'waiting_dean'" decoration-success="state == 'approved'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- FORM VIEW: faculty.research.work -->
+    <record id="view_faculty_research_work_form" model="ir.ui.view">
+        <field name="name">faculty.research.work.form</field>
+        <field name="model">faculty.research.work</field>
+        <field name="arch" type="xml">
+            <form string="Công trình Nghiên cứu Khoa học">
+                <header>
+                    <button name="action_back_to_list" string="Quay lại danh sách" type="object" icon="fa-arrow-left" class="btn-secondary"/>
+                    <button name="action_submit_dean" string="Gửi Trưởng khoa duyệt" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Duyệt nghiệm thu &amp; Đồng bộ Sổ cái" type="object" class="btn-success" invisible="state != 'waiting_dean'" groups="faculty_work_mgmt.group_faculty_dean"/>
+                    <button name="action_reset_draft" string="Chuyển về Dự thảo" type="object" class="btn-secondary" invisible="state == 'draft'" groups="faculty_work_mgmt.group_faculty_dean" confirm="Thao tác này sẽ thu hồi các giờ chuẩn đã kết chuyển vào Sổ cái. Bạn có chắc chắn muốn chuyển về Dự thảo?"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,waiting_dean,approved"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Tên Công trình / Đề tài / Hoạt động NCKH"/>
+                        <h1>
+                            <field name="name" placeholder="VD: Nghiên cứu ứng dụng Deep Learning trong phân tích dữ liệu giáo dục..." readonly="state == 'approved'"/>
+                        </h1>
+                        <div class="o_row">
+                            <span class="oe_grey">Mã công trình: </span>
+                            <field name="code" placeholder="Mã tự đặt hoặc số quyết định" readonly="state == 'approved'"/>
+                        </div>
+                    </div>
+
+                    <group>
+                        <group string="Phân loại &amp; Căn cứ">
+                            <field name="research_type" readonly="state == 'approved'"/>
+                            <field name="project_scope" invisible="research_type != 'project_level'" readonly="state == 'approved'"/>
+                            <field name="book_type" invisible="research_type != 'book'" readonly="state == 'approved'"/>
+                            <field name="academic_year_id" readonly="state == 'approved'"/>
+                            <field name="semester_id" readonly="state == 'approved'"/>
+                            <field name="norm_config_id" readonly="state == 'approved'"/>
+                        </group>
+                        <group string="Tiến độ &amp; Nghiệm thu">
+                            <field name="leader_id" readonly="state == 'approved'"/>
+                            <field name="start_date" readonly="state == 'approved'"/>
+                            <field name="acceptance_date" readonly="state == 'approved'"/>
+                            <field name="acceptance_grade" readonly="state == 'approved'"/>
+                            <field name="publication_info" readonly="state == 'approved'"/>
+                            <field name="total_hours" readonly="1" decoration-bf="1"/>
+                            <field name="library_review_state" widget="badge" decoration-warning="library_review_state == 'pending'" decoration-success="library_review_state == 'approved'"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <!-- TAB 1: THÀNH VIÊN VÀ QUY TẮC TÍNH GIỜ -->
+                        <page string="Thành viên &amp; Giờ chuẩn NCKH" name="participants">
+                            <div class="alert alert-info" role="alert" invisible="research_type not in ('conference_org', 'seminar_org')">
+                                <strong>Quy định Hội thảo / Tọa đàm:</strong> Ban tổ chức, Chủ tọa, Báo cáo viên, Thư ký và Thành viên được tính giờ chuẩn NCKH. Riêng vai trò <strong>Đại biểu tham dự</strong> thì không tính giờ NCKH (giờ = 0).
+                            </div>
+                            <field name="participant_ids" readonly="state == 'approved'">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="lecturer_id"/>
+                                    <field name="role"/>
+                                    <field name="contribution_ratio"/>
+                                    <field name="standard_hours" sum="Tổng giờ NCKH"/>
+                                    <field name="notes"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- TAB 2: DỰ TOÁN KINH PHÍ -->
+                        <page string="Dự toán Kinh phí" name="budget">
+                            <group>
+                                <group>
+                                    <field name="payment_regulation_id" readonly="state == 'approved'"/>
+                                </group>
+                                <group>
+                                    <button name="action_load_budget_lines" string="Nạp mục chi từ Quy định" type="object" icon="fa-cogs" class="btn-outline-primary" invisible="state == 'approved'"/>
+                                    <field name="total_budget" widget="monetary" decoration-bf="1"/>
+                                </group>
+                            </group>
+                            <field name="budget_line_ids" readonly="state == 'approved'">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="unit"/>
+                                    <field name="standard_rate"/>
+                                    <field name="quantity"/>
+                                    <field name="subtotal" sum="Tổng tiền"/>
+                                    <field name="formula_desc" optional="show"/>
+                                    <field name="notes" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- TAB 3: LIÊN KẾT ĐÀO TẠO & THƯ VIỆN -->
+                        <page string="Đồng bộ Trụ cột Giảng dạy &amp; Thư viện" name="sync_pillar">
+                            <div class="alert alert-success" role="alert">
+                                <strong>Cơ chế Cross-Pillar Sync:</strong> Khi bấm Duyệt nghiệm thu:
+                                <ul>
+                                    <li><strong>Xây dựng CTĐT / Đề cương:</strong> Tự động đồng bộ sang Chương trình đào tạo và Đề cương chi tiết bên Trụ cột 1.</li>
+                                    <li><strong>Học liệu, Ngân hàng đề, Sách:</strong> Tự động gắn vào Học phần tương ứng và gửi Cổng Admin rà soát Thư viện.</li>
+                                    <li><strong>Bài báo, Sách, Đề tài, Sáng kiến:</strong> Tự động đẩy vào Lý lịch Khoa học 15 mục của các giảng viên tham gia.</li>
+                                </ul>
+                            </div>
+                            <group>
+                                <group string="Học phần &amp; CTĐT liên kết">
+                                    <field name="target_course_id" readonly="state == 'approved'"/>
+                                    <field name="target_curriculum_id" readonly="state == 'approved'"/>
+                                </group>
+                                <group string="Tệp Sản phẩm NCKH">
+                                    <field name="attachment_file" filename="attachment_filename" readonly="state == 'approved'"/>
+                                    <field name="attachment_filename" invisible="1"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- TAB 4: GHI CHÚ -->
+                        <page string="Ghi chú &amp; Tóm tắt" name="notes">
+                            <field name="notes" placeholder="Tóm tắt công trình, mục tiêu nghiên cứu và sản phẩm bàn giao..." readonly="state == 'approved'"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- SEARCH VIEW: faculty.research.work -->
+    <record id="view_faculty_research_work_search" model="ir.ui.view">
+        <field name="name">faculty.research.work.search</field>
+        <field name="model">faculty.research.work</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm Công trình NCKH">
+                <field name="name" string="Tên hoặc mã" filter_domain="['|', ('name', 'ilike', self), ('code', 'ilike', self)]"/>
+                <field name="leader_id"/>
+                <field name="academic_year_id"/>
+                <field name="research_type"/>
+                <separator/>
+                <filter name="my_research" string="Công trình của tôi" domain="['|', ('leader_id.user_id', '=', uid), ('participant_ids.lecturer_id.user_id', '=', uid)]"/>
+                <separator/>
+                <filter name="draft" string="Dự thảo" domain="[('state', '=', 'draft')]"/>
+                <filter name="waiting_dean" string="Chờ Trưởng khoa duyệt" domain="[('state', '=', 'waiting_dean')]"/>
+                <filter name="approved" string="Đã nghiệm thu / Đã duyệt" domain="[('state', '=', 'approved')]"/>
+                <separator/>
+                <filter name="filter_articles" string="Bài báo khoa học" domain="[('research_type', 'in', ['article_wos_scopus', 'article_domestic', 'conference_paper'])]"/>
+                <filter name="filter_projects" string="Đề tài NCKH" domain="[('research_type', 'in', ['project_level', 'project_theory'])]"/>
+                <filter name="filter_workshops" string="Hội thảo / Tọa đàm" domain="[('research_type', 'in', ['conference_org', 'seminar_org'])]"/>
+                <filter name="filter_teaching_materials" string="Học liệu / Đề cương / CTĐT" domain="[('research_type', 'in', ['study_material', 'question_bank', 'build_curriculum', 'build_syllabus', 'book'])]"/>
+                <group expand="0" string="Gom nhóm theo">
+                    <filter name="group_year" string="Năm học" context="{'group_by': 'academic_year_id'}"/>
+                    <filter name="group_type" string="Loại hình NCKH" context="{'group_by': 'research_type'}"/>
+                    <filter name="group_leader" string="Chủ nhiệm" context="{'group_by': 'leader_id'}"/>
+                    <filter name="group_state" string="Trạng thái" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ACTION: faculty.research.work -->
+    <record id="action_faculty_research_work" model="ir.actions.act_window">
+        <field name="name">Nghiên cứu Khoa học (Trụ cột 2)</field>
+        <field name="res_model">faculty.research.work</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_faculty_research_work_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Tạo mới Công trình, Đề tài hoặc Hoạt động NCKH!
+            </p>
+            <p>
+                Quản lý toàn diện 13 loại hình NCKH, tính giờ hội thảo/tọa đàm, lập dự toán kinh phí và tự động kết chuyển giờ vào Sổ cái, cập nhật LLKH và đồng bộ Trụ cột Giảng dạy.
+            </p>
+        </field>
+    </record>
+
+    <!-- MENUITEM -->
+    <menuitem id="menu_faculty_research_work"
+              name="Công trình &amp; Đề tài NCKH"
+              parent="menu_faculty_research_root"
+              action="action_faculty_research_work"
+              sequence="10"/>
+</odoo>

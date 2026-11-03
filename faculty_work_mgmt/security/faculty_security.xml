@@ -16,6 +16,14 @@
             <field name="comment">Quyền cơ bản của giảng viên: Tra cứu thông tin, xem hồ sơ cá nhân và sổ cái giờ của mình.</field>
         </record>
 
+        <!-- 1.1. Nhóm Giảng viên thường (Alias cho group_faculty_user) -->
+        <record id="group_faculty_lecturer" model="res.groups">
+            <field name="name">Giảng viên thường</field>
+            <field name="category_id" ref="module_category_faculty_mgmt"/>
+            <field name="implied_ids" eval="[(4, ref('group_faculty_user'))]"/>
+            <field name="comment">Quyền giảng viên thường theo quy chuẩn phân vai và hiển thị cảnh báo cá nhân.</field>
+        </record>
+
         <!-- 2. Quản lý Đào tạo / Giáo vụ -->
         <record id="group_faculty_training" model="res.groups">
             <field name="name">Quản lý Đào tạo / Giáo vụ</field>
@@ -88,6 +96,98 @@
         <record id="rule_faculty_hour_ledger_dean" model="ir.rule">
             <field name="name">Lãnh đạo Khoa: Quản trị sổ cái giờ chuẩn</field>
             <field name="model_id" ref="model_faculty_hour_ledger"/>
+            <field name="groups" eval="[(4, ref('group_faculty_dean'))]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- RECORD RULES: NGHIÊN CỨU KHOA HỌC -->
+        <record id="rule_faculty_research_work_user" model="ir.rule">
+            <field name="name">Giảng viên: Xem công trình NCKH của Khoa, sửa công trình của mình</field>
+            <field name="model_id" ref="model_faculty_research_work"/>
+            <field name="groups" eval="[(4, ref('group_faculty_user'))]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="rule_faculty_research_work_dean" model="ir.rule">
+            <field name="name">Lãnh đạo Khoa: Toàn quyền công trình NCKH</field>
+            <field name="model_id" ref="model_faculty_research_work"/>
+            <field name="groups" eval="[(4, ref('group_faculty_dean'))]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- RECORD RULES: HOẠT ĐỘNG KHÁC -->
+        <record id="rule_faculty_other_work_user" model="ir.rule">
+            <field name="name">Giảng viên: Xem và khai báo hoạt động khác</field>
+            <field name="model_id" ref="model_faculty_other_work"/>
+            <field name="groups" eval="[(4, ref('group_faculty_user'))]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="rule_faculty_other_work_dean" model="ir.rule">
+            <field name="name">Lãnh đạo Khoa: Toàn quyền hoạt động khác</field>
+            <field name="model_id" ref="model_faculty_other_work"/>
+            <field name="groups" eval="[(4, ref('group_faculty_dean'))]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- RECORD RULES: THƯ VIỆN KHOA THEO 4 CẤP BẢO MẬT -->
+        <record id="rule_faculty_library_document_user" model="ir.rule">
+            <field name="name">Giảng viên: Xem tài liệu Công khai, Nội bộ hoặc Chỉ định đích danh</field>
+            <field name="model_id" ref="model_faculty_library_document"/>
+            <field name="groups" eval="[(4, ref('group_faculty_user'))]"/>
+            <field name="domain_force">['|', '|', ('security_level', '=', 'public'), ('security_level', '=', 'internal'), '&amp;', ('security_level', '=', 'restricted'), '|', ('allowed_user_ids', 'in', [user.id]), ('author_id.user_id', '=', user.id)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="rule_faculty_library_document_dean" model="ir.rule">
+            <field name="name">Lãnh đạo Khoa: Toàn quyền tra cứu và duyệt tài liệu Thư viện</field>
+            <field name="model_id" ref="model_faculty_library_document"/>
+            <field name="groups" eval="[(4, ref('group_faculty_dean'))]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- RECORD RULES: LỊCH CÔNG TÁC CHUNG TOÀN KHOA -->
+        <record id="rule_faculty_calendar_event_user" model="ir.rule">
+            <field name="name">Giảng viên: Xem lịch chung toàn Khoa, tạo và sửa lịch</field>
+            <field name="model_id" ref="model_faculty_calendar_event"/>
+            <field name="groups" eval="[(4, ref('group_faculty_user'))]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="rule_faculty_calendar_event_dean" model="ir.rule">
+            <field name="name">Lãnh đạo Khoa: Toàn quyền quản trị Lịch Công tác Khoa</field>
+            <field name="model_id" ref="model_faculty_calendar_event"/>
             <field name="groups" eval="[(4, ref('group_faculty_dean'))]"/>
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="perm_read" eval="True"/>

@@ -37,6 +37,7 @@ class FacultyHourLedger(models.Model):
         ('curriculum_dev', 'Biên soạn CTĐT / Đề cương / Ngân hàng đề'),
         ('initiative', 'Sáng kiến / Giải pháp khoa học'),
         # Hoạt động khác
+        ('teaching_plan', 'Lập kế hoạch giảng dạy học phần'),
         ('faculty_meeting', 'Sinh hoạt chuyên môn / Chuyên đề'),
         ('party_union', 'Công tác Đảng - Đoàn thể'),
         ('sports_culture', 'Thể dục thể thao / Văn hóa'),

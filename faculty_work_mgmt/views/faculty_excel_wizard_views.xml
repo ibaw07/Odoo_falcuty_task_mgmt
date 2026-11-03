@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Form View của Wizard Xuất Báo cáo Excel 2 Sheet -->
+    <record id="view_faculty_excel_report_wizard_form" model="ir.ui.view">
+        <field name="name">faculty.excel.report.wizard.form</field>
+        <field name="model">faculty.excel.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Xuất Báo cáo Excel 2 Sheet (Giờ chuẩn &amp; Công việc)">
+                <field name="state" invisible="1"/>
+
+                <!-- Trạng thái 1: Chọn tham số xuất báo cáo -->
+                <sheet invisible="state != 'draft'">
+                    <div class="oe_title mb-3">
+                        <h2 class="text-primary font-weight-bold">
+                            <i class="fa fa-file-excel-o mr-2"/>
+                            THIẾT LẬP THAM SỐ BÁO CÁO EXCEL 2 SHEET (.XLSX)
+                        </h2>
+                        <p class="text-muted small">
+                            Cấu trúc file kết quả gồm: <strong>Sheet 1:</strong> Thống kê Giờ chuẩn &amp; Bù trừ (3 Tiêu chí) | <strong>Sheet 2:</strong> Tổng hợp Chi tiết Công việc Đã làm phục vụ đánh giá, xếp loại cuối năm.
+                        </p>
+                    </div>
+
+                    <group>
+                        <group string="1. Phạm vi xuất báo cáo">
+                            <field name="report_scope" widget="radio"/>
+                            <field name="lecturer_id" invisible="report_scope != 'personal'" required="report_scope == 'personal'"/>
+                        </group>
+                        <group string="2. Niên độ &amp; Kỳ thống kê">
+                            <field name="academic_year_id"/>
+                            <field name="semester_id"/>
+                            <field name="month" invisible="report_scope != 'monthly'" required="report_scope == 'monthly'"/>
+                        </group>
+                    </group>
+
+                    <group string="3. Tùy chọn Ký duyệt &amp; Số hóa">
+                        <field name="signature_mode" widget="radio"/>
+                    </group>
+
+                    <div class="alert alert-info py-2 mt-2" role="alert">
+                        <i class="fa fa-info-circle mr-1"/>
+                        <strong>Ghi chú thể thức:</strong>
+                        <ul class="mb-0 pl-3">
+                            <li><strong>Bản in ký tươi:</strong> Tự động chừa trống ô Ngày tháng năm, ô <em>"Cá nhân giảng viên"</em> (ký nháy) và ô <em>"Trưởng khoa xác nhận"</em> (ký, đóng dấu) để in biểu A4 trình ký.</li>
+                            <li><strong>Bản gắn chữ ký số:</strong> Tự động chèn ảnh chữ ký cá nhân (<code>signature_image</code>) đã lưu trên hồ sơ hệ thống để số hóa luân chuyển nội bộ.</li>
+                        </ul>
+                    </div>
+                </sheet>
+
+                <!-- Trạng thái 2: Tải file kết quả -->
+                <sheet invisible="state != 'get'">
+                    <div class="text-center py-4">
+                        <div class="mb-3">
+                            <i class="fa fa-check-circle text-success" style="font-size: 52px;"/>
+                        </div>
+                        <h3 class="text-success font-weight-bold">Xuất Báo cáo Excel Thành công!</h3>
+                        <p class="text-muted">
+                            Hệ thống đã kết xuất toàn bộ dữ liệu Giờ chuẩn, Bù trừ chéo và Danh mục công việc vào file Excel 2 Sheet.
+                        </p>
+                        <div class="d-flex justify-content-center my-3">
+                            <div class="card p-3 border-success text-center" style="min-width: 380px; background-color: #f1f8e9;">
+                                <div class="font-weight-bold text-dark mb-2">
+                                    <i class="fa fa-file-excel-o text-success mr-2"/>
+                                    <field name="file_name" readonly="1"/>
+                                </div>
+                                <field name="excel_file" filename="file_name" widget="binary"/>
+                            </div>
+                        </div>
+                    </div>
+                </sheet>
+
+                <!-- Footer nút điều khiển -->
+                <footer>
+                    <button name="action_export_excel"
+                            string="Xuất file Excel (.xlsx)"
+                            type="object"
+                            class="btn-primary"
+                            icon="fa-file-excel-o"
+                            invisible="state != 'draft'"/>
+                    <button string="Hủy bỏ"
+                            special="cancel"
+                            class="btn-secondary"
+                            invisible="state != 'draft'"/>
+
+                    <button name="action_back_to_draft"
+                            string="Xuất bản khác"
+                            type="object"
+                            class="btn-outline-primary"
+                            icon="fa-repeat"
+                            invisible="state != 'get'"/>
+                    <button string="Đóng"
+                            special="cancel"
+                            class="btn-primary"
+                            invisible="state != 'get'"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action mở Wizard -->
+    <record id="action_faculty_excel_report_wizard" model="ir.actions.act_window">
+        <field name="name">Xuất Báo cáo Excel 2 Sheet</field>
+        <field name="res_model">faculty.excel.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>
+

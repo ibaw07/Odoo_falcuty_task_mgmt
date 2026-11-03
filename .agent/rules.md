@@ -3,7 +3,7 @@
 ## 1. MỤC TIÊU & PHẠM VI NGHIỆP VỤ CỐT LÕI
 Module `faculty_work_mgmt` chạy trên Odoo 20 Community (Offline/LAN On-Premise), quản lý toàn diện công việc của một Khoa đào tạo tại trường đại học Việt Nam:
 
-### 1.1. Quản lý Giảng viên & Lý lịch Khoa học (LLKH 15 Mục)
+### 1.1. Quản lý Giảng viên 360° & Lý lịch Khoa học (LLKH 15 Mục)
 - Kế thừa ủy quyền `_inherits = {'res.partner': 'partner_id'}` (tận dụng sẵn họ tên, điện thoại, email, địa chỉ, ảnh đại diện). Hỗ trợ đồng bộ LAN với Web App nội bộ (`http://192.168.100.98:5000/users`).
 - **Phân quyền 4 cấp & Cờ ủy quyền trực quan:** Gồm Admin, Trưởng khoa, Phó khoa, Cán bộ/Giảng viên; tích hợp 5 cờ phân quyền nhanh trên hồ sơ (`can_edit_subjects`, `can_edit_classes`, `can_edit_exams`, `can_edit_faculty_tasks`, `can_manage_hr`) tự động đồng bộ sang `res.groups`.
 - **Phát triển đội ngũ & Lãnh đạo quản lý:** Theo dõi quy hoạch chức danh, lộ trình cử đi học/bồi dưỡng (đi học >= 4 tuần tự động tính giảm trừ định mức theo công thức `Số tuần / 44`), theo dõi 16 bậc lương và **tự động tạo nhiệm vụ nhắc cán bộ Quản lý nhân sự trước 60 ngày** đến hạn nâng bậc.
@@ -101,7 +101,3 @@ Module `faculty_work_mgmt` chạy trên Odoo 20 Community (Offline/LAN On-Premis
 2. **Claude Opus 4.6 Thinking (Chuyên gia Thuật toán Lõi - 5% khối lượng):** Chỉ thực hiện rà soát và tối ưu hóa logic phức tạp bên trong các hàm Python chỉ định (`_read_group` Sổ cái, Quy tắc khảo thí động, Liên kết chéo NCKH -> Giảng dạy/LLKH). **Quy tắc khóa Token cho Opus:** Chỉ sửa trực tiếp hàm được yêu cầu bằng diff ngắn gọn, không viết lại toàn bộ file, không tạo/sửa file XML, không giải thích dài dòng.
 3. **Claude Sonnet 4.6 Thinking (Chuyên gia Excel & OWL - 5% khối lượng):** Chỉ tập trung viết logic xuất báo cáo Excel 2 Sheet (`openpyxl` + chèn chữ ký số) và hiệu ứng Hover Popup trên Lịch Dashboard. **Quy tắc khóa Token cho Sonnet:** Đi thẳng vào code của file được chỉ định, không giải thích lý thuyết.
 4. **GPT-OSS 120B Medium (Trợ lý Wizard & Báo cáo Phụ - 5% khối lượng):** Viết các Wizard độc lập (Gợi ý lịch trống, Xuất danh sách khảo thí học kỳ, Popup trả lại việc).
-
-## 4. QUY TRÌNH CẬP NHẬT & GIÁM SÁT LIÊN TỤC
-- Tuyệt đối cấm **tự ý sửa đổi mã nguồn đã triển khai** nếu chưa có xác nhận từ người dùng và chưa cập nhật tệp `ARCHITECTURE_STATE.md`.
-- Mỗi thay đổi cần tuân theo chu trình **Tư vấn (O1) → Phản biện (O2) → Cập nhật (O3)**, đảm bảo tính ổn định hệ thống (Stability First).

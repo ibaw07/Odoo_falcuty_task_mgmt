@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- QWeb template for exam semester report -->
+    <template id="faculty_exam_semester_report_template" inherit_id="web.external_layout" name="Faculty Exam Semester Report">
+        <t t-call="web.html_container">
+            <t t-set="company" t-value="env.company"/>
+            <div class="page">
+                <div class="header">
+                    <table class="table" style="width:100%;">
+                        <tr>
+                            <td style="width:20%;"><img src="/web/image/${company.logo}" class="img" style="max-height:80px;"/></td>
+                            <td style="text-align:center;">
+                                <h2>TRƯỜNG ĐẠI HỌC ...</h2>
+                                <h3>KHOA ...</h3>
+                                <h4>BÁO CÁO CÔI THI, CHẤM THI THEO LỚP VÀ HỌC PHẦN</h4>
+                            </td>
+                            <td style="width:20%;"/>
+                        </tr>
+                    </table>
+                </div>
+                <div class="footer" style="position: absolute; bottom: 0; width:100%;">
+                    <table class="table" style="width:100%;">
+                        <tr>
+                            <td style="text-align:left;">Tên người lập biểu: <span t-field="user.name"/></td>
+                            <td style="text-align:right;">Giáo vụ: ___________________   Trưởng khoa: ___________________</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="content" style="margin-top: 30px;">
+                    <t t-set="data" t-value="report_data"/>
+                    <table class="table table-sm" style="width:100%; border-collapse: collapse;" border="1">
+                        <thead>
+                            <tr style="background:#f0f0f0;">
+                                <th style="width:5%;">STT</th>
+                                <th style="width:15%;">Tên Lớp</th>
+                                <th style="width:15%;">Tên Học phần</th>
+                                <th style="width:10%;">Hình thức thi</th>
+                                <th style="width:10%;">Ngày thi</th>
+                                <th style="width:30%;">Giảng viên tham gia &amp; Hoạt động (Ra đề / Coi thi / Chấm thi / Chấm kiểm tra)</th>
+                                <th style="width:15%;">Ghi chú</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="data" t-as="line" t-set="idx" t-value="enumerate(data, start=1)">
+                                <tr>
+                                    <td><t t-esc="idx[0]"/></td>
+                                    <td><t t-esc="line.class_name"/></td>
+                                    <td><t t-esc="line.course_name"/></td>
+                                    <td><t t-esc="line.exam_type"/></td>
+                                    <td><t t-esc="line.exam_date"/></td>
+                                    <td><t t-esc="line.teachers"/></td>
+                                    <td><t t-esc="line.note"/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- Report action -->
+    <report id="faculty_exam_semester_report" string="Báo cáo coi/chấm thi" model="faculty.exam.report.wizard" report_type="qweb-pdf" name="faculty_work_mgmt.faculty_exam_semester_report_template" file="faculty_work_mgmt/faculty_exam_semester_report.xml"/>
+</odoo>
+

@@ -1,0 +1,536 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- =================================================================== -->
+    <!-- 1. CHƯƠNG TRÌNH ĐÀO TẠO (faculty.curriculum)                        -->
+    <!-- =================================================================== -->
+    <record id="view_faculty_curriculum_list" model="ir.ui.view">
+        <field name="name">faculty.curriculum.list</field>
+        <field name="model">faculty.curriculum</field>
+        <field name="arch" type="xml">
+            <list string="Chương trình Đào tạo" decoration-muted="state == 'expired'" decoration-success="state == 'approved'">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="academic_level"/>
+                <field name="total_credits"/>
+                <field name="total_courses"/>
+                <field name="decision_number"/>
+                <field name="decision_date"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'approved'" decoration-danger="state == 'expired'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_faculty_curriculum_form" model="ir.ui.view">
+        <field name="name">faculty.curriculum.form</field>
+        <field name="model">faculty.curriculum</field>
+        <field name="arch" type="xml">
+            <form string="Chương trình Đào tạo">
+                <header>
+                    <button name="action_back_to_list" string="Quay lại danh sách" type="object" class="btn-secondary" icon="fa-arrow-left"/>
+                    <button name="action_approve" string="Phê duyệt Áp dụng" type="object" class="btn-success" invisible="state != 'draft'" groups="faculty_work_mgmt.group_faculty_dean"/>
+                    <button name="action_set_expired" string="Hết hiệu lực" type="object" class="btn-danger" invisible="state != 'approved'" confirm="Chuyển CTĐT sang trạng thái Hết hiệu lực? Toàn bộ học phần thuộc CTĐT sẽ bị ẩn khỏi danh mục hoạt động!" groups="faculty_work_mgmt.group_faculty_dean"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,approved,expired"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Tên chương trình đào tạo"/>
+                        <h1>
+                            <field name="name" placeholder="VD: Cử nhân Công nghệ Thông tin" readonly="state == 'expired'"/>
+                        </h1>
+                        <h3>
+                            <field name="code" placeholder="Mã CTĐT: CNTT-2025" readonly="state == 'expired'"/>
+                        </h3>
+                    </div>
+                    <group>
+                        <group string="Thông tin Bậc đào tạo">
+                            <field name="academic_level" readonly="state == 'expired'"/>
+                            <field name="total_credits" readonly="state == 'expired'"/>
+                            <field name="total_courses"/>
+                        </group>
+                        <group string="Căn cứ Pháp lý Ban hành">
+                            <field name="decision_number" readonly="state == 'expired'"/>
+                            <field name="decision_date" readonly="state == 'expired'"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Danh mục Học phần thuộc CTĐT" name="courses">
+                            <field name="course_ids" readonly="state == 'expired'">
+                                <list>
+                                    <field name="code"/>
+                                    <field name="name"/>
+                                    <field name="credit_count"/>
+                                    <field name="lecture_hours"/>
+                                    <field name="practice_hours"/>
+                                    <field name="head_lecturer_id"/>
+                                    <field name="active" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Ghi chú &amp; Mục tiêu Đào tạo" name="notes">
+                            <field name="notes" placeholder="Mục tiêu chuẩn đầu ra, đối tượng tuyển sinh..." readonly="state == 'expired'"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_faculty_curriculum" model="ir.actions.act_window">
+        <field name="name">Chương trình Đào tạo</field>
+        <field name="res_model">faculty.curriculum</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Tạo mới Chương trình đào tạo chuẩn của Khoa.
+            </p>
+        </field>
+    </record>
+
+    <!-- =================================================================== -->
+    <!-- 2. HỌC PHẦN & MÔN HỌC (faculty.course)                             -->
+    <!-- =================================================================== -->
+    <record id="view_faculty_course_search" model="ir.ui.view">
+        <field name="name">faculty.course.search</field>
+        <field name="model">faculty.course</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm Học phần">
+                <field name="name" string="Tên học phần"/>
+                <field name="code" string="Mã học phần"/>
+                <field name="curriculum_id" string="Chương trình đào tạo"/>
+                <field name="head_lecturer_id" string="Giảng viên quản lý"/>
+                <filter string="Đang hoạt động" name="filter_active" domain="[('active', '=', True)]"/>
+                <filter string="Học phần tích hợp" name="filter_composite" domain="[('is_composite', '=', True)]"/>
+                <group expand="0" string="Gom nhóm theo">
+                    <filter string="Chương trình đào tạo" name="group_curriculum" context="{'group_by': 'curriculum_id'}"/>
+                    <filter string="Giảng viên quản lý" name="group_head_lecturer" context="{'group_by': 'head_lecturer_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_faculty_course_list" model="ir.ui.view">
+        <field name="name">faculty.course.list</field>
+        <field name="model">faculty.course</field>
+        <field name="arch" type="xml">
+            <list string="Học phần &amp; Môn học" decoration-muted="not active">
+                <!-- Cột STT đánh số tự động -->
+                <field name="stt" string="STT"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="curriculum_id"/>
+                <field name="credit_count"/>
+                <field name="lecture_hours"/>
+                <field name="practice_hours"/>
+                <field name="total_hours"/>
+                <field name="head_lecturer_id"/>
+                <field name="is_composite" widget="boolean"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_faculty_course_form" model="ir.ui.view">
+        <field name="name">faculty.course.form</field>
+        <field name="model">faculty.course</field>
+        <field name="arch" type="xml">
+            <form string="Học phần &amp; Môn học">
+                <header>
+                    <button name="action_back_to_list" string="Quay lại danh sách" type="object" class="btn-secondary" icon="fa-arrow-left"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Tên học phần"/>
+                        <h1>
+                            <field name="name" placeholder="VD: Lập trình Hướng đối tượng"/>
+                        </h1>
+                        <h3>
+                            <field name="code" placeholder="Mã HP: IT201"/>
+                        </h3>
+                    </div>
+                    <group>
+                        <group string="Chương trình &amp; Thời lượng">
+                            <field name="curriculum_id" options="{'no_create': True}"/>
+                            <field name="credit_count"/>
+                            <field name="lecture_hours"/>
+                            <!-- Đổi nhãn chuẩn: Số tiết BT, TL, KT, BCTT -->
+                            <field name="practice_hours"/>
+                            <field name="total_hours"/>
+                        </group>
+                        <group string="Phân công Giảng viên &amp; Cấu trúc">
+                            <field name="head_lecturer_id" options="{'no_create': True}"/>
+                            <!-- Cho phép lưu bình thường khi chỉ có 1 giảng viên -->
+                            <field name="lecturer_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                            <field name="is_composite" widget="boolean_toggle"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <!-- Tab Môn con tích hợp -->
+                        <page string="Danh sách Môn con tích hợp" name="sub_modules" invisible="not is_composite">
+                            <field name="sub_module_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name" string="Tên môn con"/>
+                                    <field name="code" string="Mã môn con"/>
+                                    <field name="lecture_hours" string="Số tiết LT"/>
+                                    <field name="practice_hours" string="Số tiết BT, TL, KT"/>
+                                    <field name="lecturer_id" string="GV phụ trách"/>
+                                    <field name="notes" string="Ghi chú"/>
+                                </list>
+                            </field>
+                        </page>
+                        <!-- Tab Đề cương chi tiết -->
+                        <page string="Đề cương chi tiết" name="syllabi">
+                            <field name="syllabus_ids">
+                                <list editable="bottom" decoration-success="state == 'applied'">
+                                    <field name="apply_year" string="Năm áp dụng"/>
+                                    <field name="name" string="Tên đề cương"/>
+                                    <field name="decision_number" string="Số QĐ"/>
+                                    <field name="decision_date" string="Ngày ban hành"/>
+                                    <field name="attachment_filename" invisible="1"/>
+                                    <field name="attachment_file" filename="attachment_filename" widget="binary" string="File Đề cương (Word/PDF)"/>
+                                    <field name="state" widget="badge" decoration-warning="state == 'draft'" decoration-success="state == 'applied'" decoration-muted="state == 'superseded'"/>
+                                    <button name="action_apply" string="Áp dụng" type="object" class="btn-sm btn-success" invisible="state == 'applied'"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Ghi chú" name="notes">
+                            <field name="notes" placeholder="Mô tả tóm tắt học phần, tài liệu học tập bắt buộc..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_faculty_course" model="ir.actions.act_window">
+        <field name="name">Học phần &amp; Môn học</field>
+        <field name="res_model">faculty.course</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_group_curriculum': 1}</field>
+    </record>
+
+    <!-- =================================================================== -->
+    <!-- 3. DANH SÁCH LỚP (faculty.student.class)                            -->
+    <!-- =================================================================== -->
+    <record id="view_faculty_student_class_list" model="ir.ui.view">
+        <field name="name">faculty.student.class.list</field>
+        <field name="model">faculty.student.class</field>
+        <field name="arch" type="xml">
+            <list string="Danh sách lớp">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="curriculum_id"/>
+                <field name="academic_year_id"/>
+                <field name="student_count"/>
+                <field name="class_factor"/>
+                <field name="class_type" widget="badge" decoration-info="class_type == 'regular'" decoration-warning="class_type == 'makeup'" decoration-success="class_type == 'improvement'"/>
+                <field name="classroom"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_faculty_student_class_form" model="ir.ui.view">
+        <field name="name">faculty.student.class.form</field>
+        <field name="model">faculty.student.class</field>
+        <field name="arch" type="xml">
+            <form string="Lớp học viên">
+                <header>
+                    <button name="action_back_to_list" string="Quay lại danh sách" type="object" class="btn-secondary" icon="fa-arrow-left"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Tên lớp"/>
+                        <h1>
+                            <field name="name" placeholder="VD: Lớp Đại học CNTT K25A"/>
+                        </h1>
+                        <h3>
+                            <field name="code" placeholder="Mã lớp: D25-CNTT-A"/>
+                        </h3>
+                    </div>
+                    <group>
+                        <group string="Chương trình &amp; Năm học">
+                            <field name="curriculum_id" options="{'no_create': True}"/>
+                            <field name="academic_year_id" options="{'no_create': True}"/>
+                            <field name="class_type"/>
+                        </group>
+                        <group string="Quy mô Sĩ số &amp; Phòng học">
+                            <field name="student_count"/>
+                            <field name="class_factor"/>
+                            <field name="classroom"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Danh sách Học phần theo Kỳ" name="class_courses">
+                            <field name="class_course_ids">
+                                <list>
+                                    <field name="course_id"/>
+                                    <field name="semester_id"/>
+                                    <field name="credit_count"/>
+                                    <field name="head_lecturer_id"/>
+                                    <field name="start_date"/>
+                                    <field name="end_date"/>
+                                    <field name="total_student_count"/>
+                                    <field name="class_factor"/>
+                                    <field name="course_type"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Ghi chú" name="notes">
+                            <field name="notes" placeholder="Ghi chú về lớp, ban cán sự lớp..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_faculty_student_class" model="ir.actions.act_window">
+        <field name="name">Danh sách lớp</field>
+        <field name="res_model">faculty.student.class</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- =================================================================== -->
+    <!-- 4. LỊCH GIẢNG CHI TIẾT (faculty.class.course)                      -->
+    <!-- =================================================================== -->
+    <record id="view_faculty_class_course_search" model="ir.ui.view">
+        <field name="name">faculty.class.course.search</field>
+        <field name="model">faculty.class.course</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm Lịch giảng chi tiết">
+                <field name="name" string="Học phần - Lớp"/>
+                <field name="course_id" string="Học phần"/>
+                <field name="class_id" string="Lớp"/>
+                <field name="head_lecturer_id" string="Giảng viên quản lý"/>
+                <field name="semester_id" string="Học kỳ"/>
+                <filter string="Có mời Báo cáo viên" name="filter_guest_speaker" domain="[('has_guest_speaker', '=', True)]"/>
+                <filter string="Chưa ra đề thi" name="filter_paper_unlocked" domain="[('paper_locked', '=', False)]"/>
+                <filter string="Chưa hoàn thành khảo thí" name="filter_exam_undone" domain="[('exam_done', '=', False)]"/>
+                <group expand="0" string="Gom nhóm theo">
+                    <filter string="Năm học" name="group_academic_year" context="{'group_by': 'academic_year_id'}"/>
+                    <filter string="Học kỳ" name="group_semester" context="{'group_by': 'semester_id'}"/>
+                    <filter string="Lớp" name="group_class" context="{'group_by': 'class_id'}"/>
+                    <filter string="Giảng viên quản lý" name="group_head_lecturer" context="{'group_by': 'head_lecturer_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_faculty_class_course_list" model="ir.ui.view">
+        <field name="name">faculty.class.course.list</field>
+        <field name="model">faculty.class.course</field>
+        <field name="arch" type="xml">
+            <!-- Mặc định sắp xếp theo Ngày bắt đầu học (start_date asc) -->
+            <list string="Lịch giảng chi tiết" decoration-warning="has_guest_speaker" decoration-success="exam_done">
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="course_id"/>
+                <field name="class_id"/>
+                <field name="semester_id"/>
+                <field name="head_lecturer_id"/>
+                <field name="total_session_hours" string="Số tiết đã xếp"/>
+                <field name="total_student_count" string="Sĩ số thực tế"/>
+                <field name="class_factor" string="Hệ số lớp"/>
+                <field name="course_type"/>
+                <field name="exam_date"/>
+                <field name="exam_format"/>
+                <field name="paper_locked" string="Đã ra đề" widget="boolean"/>
+                <field name="exam_done" string="Xong khảo thí" widget="boolean"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_faculty_class_course_form" model="ir.ui.view">
+        <field name="name">faculty.class.course.form</field>
+        <field name="model">faculty.class.course</field>
+        <field name="arch" type="xml">
+            <form string="Lịch giảng chi tiết Học phần">
+                <header>
+                    <button name="action_back_to_list" string="Quay lại danh sách" type="object" class="btn-secondary" icon="fa-arrow-left"/>
+                    <button name="action_approve_exam_plan" string="Trưởng khoa Duyệt Kế hoạch đầu năm" type="object" class="btn-primary" invisible="exam_plan_state == 'approved'" groups="faculty_work_mgmt.group_faculty_dean"/>
+                    <button name="action_finish_exam" string="Hoàn thành Khảo thí &amp; Kết chuyển Giờ" type="object" class="btn-success" invisible="exam_done" confirm="Xác nhận hoàn thành khảo thí và kết chuyển toàn bộ giờ Coi thi, Chấm thi, Chấm kiểm tra vào Sổ cái?"/>
+                    <field name="exam_plan_state" widget="badge" decoration-warning="exam_plan_state == 'draft'" decoration-success="exam_plan_state == 'approved'"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="course_id" string="Học phần giảng dạy"/>
+                        <h1>
+                            <field name="course_id" options="{'no_create': True}"/>
+                        </h1>
+                        <h3>
+                            <field name="class_id" options="{'no_create': True}"/>
+                        </h3>
+                    </div>
+                    <group>
+                        <group string="Thời gian &amp; Địa điểm">
+                            <field name="semester_id" options="{'no_create': True}"/>
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                            <field name="classroom"/>
+                            <field name="course_type"/>
+                        </group>
+                        <group string="Giảng viên &amp; Sĩ số thực tế">
+                            <field name="head_lecturer_id" options="{'no_create': True}"/>
+                            <field name="lecturer_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                            <field name="base_student_count"/>
+                            <field name="extra_student_count"/>
+                            <field name="total_student_count"/>
+                            <field name="class_factor"/>
+                        </group>
+                    </group>
+
+                    <!-- Khung Báo cáo viên thực tế & Thi kết thúc học phần -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-3 border-info">
+                                <div class="card-header bg-light py-2">
+                                    <strong><i class="fa fa-user-secret me-2"/>Báo cáo viên Thực tế (nếu có):</strong>
+                                </div>
+                                <div class="card-body py-2">
+                                    <field name="has_guest_speaker" widget="boolean_toggle"/>
+                                    <div invisible="not has_guest_speaker" class="mt-2">
+                                        <field name="guest_speaker_info" placeholder="Họ tên, đơn vị công tác của Báo cáo viên..."/>
+                                        <field name="guest_lecture_date" placeholder="Ngày báo cáo thực tế..."/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-3 border-warning">
+                                <div class="card-header bg-light py-2">
+                                    <strong><i class="fa fa-pencil-square-o me-2"/>Kế hoạch Thi &amp; Cơ chế Ra đề:</strong>
+                                </div>
+                                <div class="card-body py-2">
+                                    <div class="row">
+                                        <div class="col-6"><field name="exam_date"/></div>
+                                        <div class="col-6"><field name="exam_session"/></div>
+                                    </div>
+                                    <div class="row mt-1">
+                                        <div class="col-6"><field name="exam_format"/></div>
+                                        <div class="col-6"><field name="question_source"/></div>
+                                    </div>
+                                    <div class="mt-2 text-muted" invisible="not paper_locked">
+                                        <i class="fa fa-lock text-danger me-1"/>Đã khóa ra đề bởi: <strong><field name="paper_created_lecturer_id" readonly="1" class="oe_inline"/></strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <notebook>
+                        <!-- TAB 1: LỊCH GIẢNG CHI TIẾT TỪNG BUỔI -->
+                        <page string="Lịch giảng chi tiết từng buổi" name="sessions">
+                            <field name="session_ids">
+                                <list editable="bottom" decoration-warning="has_conflict">
+                                    <field name="date"/>
+                                    <field name="session_time"/>
+                                    <field name="period_count"/>
+                                    <field name="sub_module_id" optional="hide"/>
+                                    <field name="lecturer_id"/>
+                                    <field name="is_substituted" widget="boolean_toggle" string="Báo bận/Dạy thay"/>
+                                    <field name="substitute_lecturer_id" string="GV dạy thay"/>
+                                    <field name="actual_lecturer_id" readonly="1" string="GV đứng lớp thực tế"/>
+                                    <field name="class_factor" readonly="1"/>
+                                    <field name="standard_hours" readonly="1" string="Giờ chuẩn"/>
+                                    <field name="conflict_warning" readonly="1" string="Cảnh báo trùng"/>
+                                    <field name="has_conflict" invisible="1"/>
+                                    <field name="notes" placeholder="Nội dung bài học..."/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- TAB 2: CƠ CHẾ TÍCH ĐÃ RA ĐỀ ĐỘC QUYỀN -->
+                        <page string="Phân công Ra đề thi" name="paper_makers">
+                            <div class="alert alert-info py-2" role="alert">
+                                <strong>Cơ chế ra đề độc quyền:</strong> Khi một giảng viên tự giác tích "Đã ra đề", hệ thống tự động khóa ô tích của các đồng nghiệp còn lại, gửi thông báo và tự động ghi giờ chuẩn vào Sổ cái nếu nguồn đề là "Ra đề mới".
+                            </div>
+                            <field name="paper_maker_ids">
+                                <list editable="bottom">
+                                    <field name="lecturer_id" readonly="1"/>
+                                    <field name="is_paper_created" widget="boolean_toggle" string="Đã ra đề"/>
+                                    <field name="created_date" readonly="1"/>
+                                    <button name="action_toggle_created" string="Xác nhận hoàn thành ra đề" type="object" class="btn-sm btn-primary" invisible="is_paper_created or is_locked"/>
+                                    <field name="is_locked" invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- TAB 3: CHUỖI CHECKLIST 7 BƯỚC HỌC VỤ -->
+                        <page string="Chuỗi Checklist 7 bước học vụ" name="checklists">
+                            <field name="checklist_ids" domain="[('is_visible', '=', True)]">
+                                <list editable="bottom" decoration-danger="alert_level == 'overdue'" decoration-warning="alert_level == 'urgent'" decoration-success="is_done">
+                                    <field name="step_number" string="Bước"/>
+                                    <field name="name" string="Nội dung công việc"/>
+                                    <field name="form_template_name" string="Biểu mẫu / Giấy tờ"/>
+                                    <field name="responsible_lecturer_id" string="Người phụ trách"/>
+                                    <field name="deadline" string="Hạn chót"/>
+                                    <field name="alert_level" widget="badge" decoration-danger="alert_level == 'overdue'" decoration-warning="alert_level == 'urgent'" decoration-muted="alert_level == 'normal'"/>
+                                    <field name="is_done" widget="boolean" string="Đã xong"/>
+                                    <field name="done_date" readonly="1" string="Ngày xong"/>
+                                    <button name="action_mark_done" string="Xong" type="object" class="btn-sm btn-success" invisible="is_done"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- TAB 4: DỰ TOÁN MỜI GIẢNG / BÁO CÁO VIÊN -->
+                        <page string="Dự toán Mời giảng / Báo cáo viên" name="budget" invisible="not has_guest_speaker">
+                            <field name="budget_line_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name" string="Khoản mục chi"/>
+                                    <field name="unit" string="Đơn vị tính"/>
+                                    <field name="standard_rate" string="Định mức (VNĐ)"/>
+                                    <field name="quantity" string="Số lượng"/>
+                                    <field name="subtotal" string="Thành tiền (VNĐ)"/>
+                                    <field name="notes" string="Ghi chú"/>
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer oe_right">
+                                <field name="total_budget" widget="monetary" string="Tổng cộng dự toán:"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_faculty_class_course" model="ir.actions.act_window">
+        <field name="name">Lịch giảng chi tiết</field>
+        <field name="res_model">faculty.class.course</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_group_semester': 1}</field>
+    </record>
+
+    <!-- =================================================================== -->
+    <!-- MENU ITEMS FOR TEACHING                                            -->
+    <!-- =================================================================== -->
+    <menuitem id="menu_faculty_curriculum"
+              name="Chương trình Đào tạo"
+              parent="faculty_work_mgmt.menu_faculty_teaching_root"
+              action="action_faculty_curriculum"
+              sequence="10"/>
+
+    <menuitem id="menu_faculty_course"
+              name="Học phần &amp; Môn học"
+              parent="faculty_work_mgmt.menu_faculty_teaching_root"
+              action="action_faculty_course"
+              sequence="20"/>
+
+    <menuitem id="menu_faculty_student_class"
+              name="Danh sách lớp"
+              parent="faculty_work_mgmt.menu_faculty_teaching_root"
+              action="action_faculty_student_class"
+              sequence="30"/>
+
+    <menuitem id="menu_faculty_class_course"
+              name="Lịch giảng chi tiết"
+              parent="faculty_work_mgmt.menu_faculty_teaching_root"
+              action="action_faculty_class_course"
+              sequence="40"/>
+</odoo>

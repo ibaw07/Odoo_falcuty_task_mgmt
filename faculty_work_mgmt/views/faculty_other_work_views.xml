@@ -1,0 +1,483 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================================================================= -->
+    <!-- 1. HOẠT ĐỘNG KHÁC (TRỤ CỘT 3): faculty.other.work                 -->
+    <!-- ================================================================= -->
+    <record id="view_faculty_other_work_list" model="ir.ui.view">
+        <field name="name">faculty.other.work.list</field>
+        <field name="model">faculty.other.work</field>
+        <field name="arch" type="xml">
+            <list string="Hoạt động khác của Khoa" decoration-info="state == 'draft'" decoration-success="state == 'approved'" decoration-danger="alert_level == 'urgent'" decoration-bf="alert_level == 'overdue'">
+                <field name="code" optional="show"/>
+                <field name="name"/>
+                <field name="activity_type"/>
+                <field name="academic_year_id"/>
+                <field name="lead_lecturer_id"/>
+                <field name="deadline"/>
+                <field name="alert_level" widget="badge" decoration-danger="alert_level == 'urgent'" decoration-warning="alert_level == 'overdue'" decoration-success="alert_level == 'normal'"/>
+                <field name="category" optional="show"/>
+                <field name="total_participant_hours" sum="Tổng giờ chuẩn"/>
+                <field name="total_budget" sum="Tổng dự toán" widget="monetary" optional="hide"/>
+                <field name="is_self_declared" optional="hide"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-warning="state == 'waiting_dean'" decoration-success="state == 'approved'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_faculty_other_work_form" model="ir.ui.view">
+        <field name="name">faculty.other.work.form</field>
+        <field name="model">faculty.other.work</field>
+        <field name="arch" type="xml">
+            <form string="Hoạt động khác của Khoa">
+                <header>
+                    <button name="action_back_to_list" string="Quay lại danh sách" type="object" icon="fa-arrow-left" class="btn-secondary"/>
+                    <button name="action_submit_dean" string="Gửi Trưởng khoa duyệt" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Duyệt hoàn thành &amp; Ghi sổ" type="object" class="btn-success" invisible="state != 'waiting_dean'" groups="faculty_work_mgmt.group_faculty_dean"/>
+                    <button name="action_reset_draft" string="Chuyển về Dự thảo" type="object" class="btn-secondary" invisible="state == 'draft'" groups="faculty_work_mgmt.group_faculty_dean" confirm="Thao tác này sẽ thu hồi các giờ chuẩn đã kết chuyển vào Sổ cái. Bạn có chắc chắn muốn chuyển về Dự thảo?"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,waiting_dean,approved"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Tên Hoạt động / Nhiệm vụ Khoa"/>
+                        <h1>
+                            <field name="name" placeholder="VD: Tổ chức Tọa đàm Chuyên môn Bộ môn, Công tác Tuyển sinh..." readonly="state == 'approved'"/>
+                        </h1>
+                        <div class="o_row">
+                            <span class="oe_grey">Mã hoạt động: </span>
+                            <field name="code" placeholder="Tự đặt hoặc theo văn bản" readonly="state == 'approved'"/>
+                        </div>
+                    </div>
+
+                    <group>
+                        <group string="Thông tin Phân loại &amp; Cán bộ">
+                            <field name="activity_type" readonly="state == 'approved'"/>
+                            <field name="academic_year_id" readonly="state == 'approved'"/>
+                            <field name="semester_id" readonly="state == 'approved'"/>
+                            <field name="lead_lecturer_id" readonly="state == 'approved'"/>
+                            <field name="assigner_id" readonly="state == 'approved'"/>
+                        </group>
+                        <group string="Tiến độ, Tiêu chí &amp; Cảnh báo">
+                            <field name="is_self_declared" readonly="state == 'approved'"/>
+                            <field name="category" readonly="state == 'approved'"/>
+                            <field name="start_date" readonly="state == 'approved'"/>
+                            <field name="deadline" readonly="state == 'approved'"/>
+                            <field name="completion_date" readonly="state == 'approved'"/>
+                            <field name="alert_level" widget="badge" decoration-danger="alert_level == 'urgent'" decoration-warning="alert_level == 'overdue'" decoration-success="alert_level == 'normal'"/>
+                            <field name="standard_hours" readonly="state == 'approved'"/>
+                            <field name="total_participant_hours" readonly="1" decoration-bf="1"/>
+                            <field name="library_review_state" widget="badge" decoration-warning="library_review_state == 'pending'" decoration-success="library_review_state == 'approved'"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <!-- TAB 1: THÀNH VIÊN VÀ PHÂN BỔ GIỜ -->
+                        <page string="Thành viên tham gia &amp; Giờ chuẩn" name="participants">
+                            <field name="participant_ids" readonly="state == 'approved'">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="lecturer_id"/>
+                                    <field name="role"/>
+                                    <field name="standard_hours" sum="Tổng giờ chuẩn"/>
+                                    <field name="notes"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- TAB 2: DỰ TOÁN KINH PHÍ -->
+                        <page string="Dự toán Kinh phí" name="budget">
+                            <div class="alert alert-info" role="alert" invisible="activity_type != 'training_course_org'">
+                                <strong>Tổ chức lớp bồi dưỡng:</strong> Bạn có thể chọn Quy định thanh toán để tự động nạp các mức chi thù lao giảng bài, tổ chức, văn phòng phẩm...
+                            </div>
+                            <group>
+                                <group>
+                                    <field name="payment_regulation_id" readonly="state == 'approved'"/>
+                                </group>
+                                <group>
+                                    <button name="action_load_budget_lines" string="Nạp mục chi từ Quy định" type="object" icon="fa-cogs" class="btn-outline-primary" invisible="state == 'approved'"/>
+                                    <field name="total_budget" widget="monetary" decoration-bf="1"/>
+                                </group>
+                            </group>
+                            <field name="budget_line_ids" readonly="state == 'approved'">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="unit"/>
+                                    <field name="standard_rate"/>
+                                    <field name="quantity"/>
+                                    <field name="subtotal" sum="Tổng tiền"/>
+                                    <field name="formula_desc" optional="show"/>
+                                    <field name="notes" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- TAB 3: HỒ SƠ, KẾ HOẠCH & BÁO CÁO -->
+                        <page string="Hồ sơ Kế hoạch &amp; Báo cáo" name="attachment">
+                            <group>
+                                <group string="Tệp đính kèm">
+                                    <field name="attachment_file" filename="attachment_filename" readonly="state == 'approved'"/>
+                                    <field name="attachment_filename" invisible="1"/>
+                                </group>
+                            </group>
+                            <field name="notes" placeholder="Chi tiết kế hoạch, kết quả thực hiện, số người tham gia..." readonly="state == 'approved'"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_faculty_other_work_search" model="ir.ui.view">
+        <field name="name">faculty.other.work.search</field>
+        <field name="model">faculty.other.work</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm Hoạt động khác">
+                <field name="name" string="Tên hoặc mã" filter_domain="['|', ('name', 'ilike', self), ('code', 'ilike', self)]"/>
+                <field name="lead_lecturer_id"/>
+                <field name="academic_year_id"/>
+                <field name="activity_type"/>
+                <separator/>
+                <filter name="my_work" string="Hoạt động của tôi" domain="['|', ('lead_lecturer_id.user_id', '=', uid), ('participant_ids.lecturer_id.user_id', '=', uid)]"/>
+                <filter name="self_declared" string="Giảng viên tự khai báo" domain="[('is_self_declared', '=', True)]"/>
+                <separator/>
+                <filter name="urgent" string="Khẩn cấp (&lt;= 3 ngày)" domain="[('alert_level', '=', 'urgent')]"/>
+                <filter name="overdue" string="Quá hạn" domain="[('alert_level', '=', 'overdue')]"/>
+                <separator/>
+                <filter name="draft" string="Dự thảo" domain="[('state', '=', 'draft')]"/>
+                <filter name="waiting_dean" string="Chờ duyệt" domain="[('state', '=', 'waiting_dean')]"/>
+                <filter name="approved" string="Đã hoàn thành" domain="[('state', '=', 'approved')]"/>
+                <group expand="0" string="Gom nhóm theo">
+                    <filter name="group_year" string="Năm học" context="{'group_by': 'academic_year_id'}"/>
+                    <filter name="group_type" string="Loại hoạt động" context="{'group_by': 'activity_type'}"/>
+                    <filter name="group_lead" string="Người phụ trách chính" context="{'group_by': 'lead_lecturer_id'}"/>
+                    <filter name="group_state" string="Trạng thái" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_faculty_other_work" model="ir.actions.act_window">
+        <field name="name">Hoạt động khác (Trụ cột 3)</field>
+        <field name="res_model">faculty.other.work</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_faculty_other_work_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Tạo mới Hoạt động khác hoặc Công việc giao / Tự khai báo!
+            </p>
+            <p>
+                Quản lý các hoạt động sinh hoạt chuyên môn, thể thao, văn hóa, công tác Đảng, đoàn thể, tuyển sinh, tuyển dụng và tổ chức lớp bồi dưỡng.
+            </p>
+        </field>
+    </record>
+
+    <!-- ================================================================= -->
+    <!-- 2. PHÂN CÔNG 6 MẢNG CHỨC NĂNG: faculty.stream.assignment          -->
+    <!-- ================================================================= -->
+    <record id="view_faculty_stream_assignment_list" model="ir.ui.view">
+        <field name="name">faculty.stream.assignment.list</field>
+        <field name="model">faculty.stream.assignment</field>
+        <field name="arch" type="xml">
+            <list string="Phân công Nhiệm vụ theo 6 Mảng Chức năng Khoa" default_order="work_stream, sequence, id">
+                <field name="sequence" widget="handle"/>
+                <field name="work_stream"/>
+                <field name="name"/>
+                <field name="lecturer_id"/>
+                <field name="supervisor_id"/>
+                <field name="task_nature"/>
+                <field name="cycle"/>
+                <field name="academic_year_id"/>
+                <field name="standard_hours" sum="Tổng giờ quy đổi"/>
+                <field name="auto_grant_permission" widget="boolean_toggle"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'active'" decoration-muted="state == 'done'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_faculty_stream_assignment_form" model="ir.ui.view">
+        <field name="name">faculty.stream.assignment.form</field>
+        <field name="model">faculty.stream.assignment</field>
+        <field name="arch" type="xml">
+            <form string="Phân công Nhiệm vụ Chức năng Khoa">
+                <header>
+                    <button name="action_back_to_list" string="Quay lại danh sách" type="object" icon="fa-arrow-left" class="btn-secondary"/>
+                    <button name="action_print_assignment_report" string="In Biểu Phân công (A4)" type="object" icon="fa-print" class="btn-primary"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,active,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Tên Nhiệm vụ / Đầu việc thường xuyên"/>
+                        <h1>
+                            <field name="name" placeholder="VD: Theo dõi lịch giảng, tiến độ đào tạo và đề cương chi tiết..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Mảng Công tác &amp; Nhân sự Phụ trách">
+                            <field name="work_stream"/>
+                            <field name="lecturer_id"/>
+                            <field name="assistant_ids" widget="many2many_tags" placeholder="Chọn cán bộ phối hợp nếu có..."/>
+                            <field name="supervisor_id"/>
+                        </group>
+                        <group string="Chu kỳ &amp; Phân quyền Tự động">
+                            <field name="task_nature"/>
+                            <field name="cycle"/>
+                            <field name="academic_year_id"/>
+                            <field name="semester_id"/>
+                            <field name="standard_hours"/>
+                            <field name="auto_grant_permission"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Yêu cầu &amp; Hướng dẫn Thực hiện" name="details">
+                            <field name="notes" placeholder="Mô tả cụ thể quyền hạn, trách nhiệm, đầu ra báo cáo và chế độ giao ban..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_faculty_stream_assignment_search" model="ir.ui.view">
+        <field name="name">faculty.stream.assignment.search</field>
+        <field name="model">faculty.stream.assignment</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm Phân công Chức năng">
+                <field name="name"/>
+                <field name="lecturer_id"/>
+                <field name="supervisor_id"/>
+                <field name="work_stream"/>
+                <field name="academic_year_id"/>
+                <separator/>
+                <filter name="my_tasks" string="Nhiệm vụ của tôi" domain="['|', ('lecturer_id.user_id', '=', uid), ('assistant_ids.user_id', '=', uid)]"/>
+                <filter name="my_supervision" string="Mảng tôi phụ trách chỉ đạo" domain="[('supervisor_id.user_id', '=', uid)]"/>
+                <separator/>
+                <filter name="active_tasks" string="Đang thực hiện" domain="[('state', '=', 'active')]"/>
+                <filter name="regular" string="Việc thường xuyên" domain="[('task_nature', '=', 'regular')]"/>
+                <group expand="0" string="Gom nhóm theo">
+                    <filter name="group_stream" string="Mảng chức năng" context="{'group_by': 'work_stream'}"/>
+                    <filter name="group_supervisor" string="Lãnh đạo phụ trách" context="{'group_by': 'supervisor_id'}"/>
+                    <filter name="group_lecturer" string="Cán bộ thực hiện chính" context="{'group_by': 'lecturer_id'}"/>
+                    <filter name="group_year" string="Năm học" context="{'group_by': 'academic_year_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_faculty_stream_assignment" model="ir.actions.act_window">
+        <field name="name">Phân công 6 Mảng Chức năng Khoa</field>
+        <field name="res_model">faculty.stream.assignment</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_faculty_stream_assignment_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Thiết lập Bảng Phân công Nhiệm vụ theo 6 Mảng Chức năng của Khoa!
+            </p>
+            <p>
+                Phân công cán bộ đầu mối cho từng mảng công tác: Đào tạo, NCKH, Cán bộ nhân sự, Khảo thí - Sinh viên, Đảng - Đoàn thể và Cơ sở vật chất. Hỗ trợ in Biểu A4 chuẩn thể thức.
+            </p>
+        </field>
+    </record>
+
+    <!-- ================================================================= -->
+    <!-- 3. THƯ VIỆN NHỎ OFFLINE CỦA KHOA: category & document             -->
+    <!-- ================================================================= -->
+    <!-- CATEGORY -->
+    <record id="view_faculty_library_category_list" model="ir.ui.view">
+        <field name="name">faculty.library.category.list</field>
+        <field name="model">faculty.library.category</field>
+        <field name="arch" type="xml">
+            <list string="Thư mục Tài liệu Thư viện">
+                <field name="sequence" widget="handle"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="parent_id"/>
+                <field name="document_count"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_faculty_library_category_form" model="ir.ui.view">
+        <field name="name">faculty.library.category.form</field>
+        <field name="model">faculty.library.category</field>
+        <field name="arch" type="xml">
+            <form string="Thư mục Thư viện">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Tên Thư mục / Danh mục"/>
+                        <h1>
+                            <field name="name" placeholder="VD: Đề cương chi tiết học phần, Giáo trình &amp; Sách..."/>
+                        </h1>
+                        <div class="o_row">
+                            <span class="oe_grey">Mã thư mục: </span>
+                            <field name="code" placeholder="VD: SYLLABUS, BOOKS, REGULATIONS"/>
+                        </div>
+                    </div>
+                    <group>
+                        <field name="parent_id"/>
+                        <field name="sequence"/>
+                        <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- DOCUMENT -->
+    <record id="view_faculty_library_document_list" model="ir.ui.view">
+        <field name="name">faculty.library.document.list</field>
+        <field name="model">faculty.library.document</field>
+        <field name="arch" type="xml">
+            <list string="Tài liệu Thư viện Khoa" decoration-warning="review_state == 'pending_review'" decoration-success="review_state == 'approved'" decoration-muted="review_state == 'rejected'">
+                <field name="code" optional="show"/>
+                <field name="name"/>
+                <field name="category_id"/>
+                <field name="document_type"/>
+                <field name="author_id"/>
+                <field name="course_id" optional="show"/>
+                <field name="year"/>
+                <field name="file_size_display"/>
+                <field name="security_level" widget="badge"/>
+                <field name="review_state" widget="badge" decoration-warning="review_state == 'pending_review'" decoration-success="review_state == 'approved'" decoration-danger="review_state == 'rejected'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_faculty_library_document_form" model="ir.ui.view">
+        <field name="name">faculty.library.document.form</field>
+        <field name="model">faculty.library.document</field>
+        <field name="arch" type="xml">
+            <form string="Tài liệu Thư viện Khoa">
+                <header>
+                    <button name="action_back_to_list" string="Quay lại danh sách" type="object" icon="fa-arrow-left" class="btn-secondary"/>
+                    <button name="action_approve_library" string="Phê duyệt lưu Thư viện" type="object" class="btn-success" invisible="review_state == 'approved'" groups="faculty_work_mgmt.group_faculty_dean"/>
+                    <button name="action_reject_library" string="Từ chối lưu" type="object" class="btn-danger" invisible="review_state == 'rejected'" groups="faculty_work_mgmt.group_faculty_dean"/>
+                    <field name="review_state" widget="statusbar" statusbar_visible="pending_review,approved,rejected"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Tên Tài liệu / Văn bản"/>
+                        <h1>
+                            <field name="name" placeholder="VD: Đề cương chi tiết môn Lập trình Web 2026, Kỷ yếu Hội thảo Khoa học..."/>
+                        </h1>
+                        <div class="o_row">
+                            <span class="oe_grey">Mã số / Số hiệu: </span>
+                            <field name="code" placeholder="VD: DC-IT201-2026, QD-12/2026"/>
+                        </div>
+                    </div>
+                    <group>
+                        <group string="Phân loại &amp; Liên kết">
+                            <field name="category_id"/>
+                            <field name="document_type"/>
+                            <field name="author_id"/>
+                            <field name="course_id"/>
+                            <field name="curriculum_id"/>
+                            <field name="year"/>
+                        </group>
+                        <group string="Tệp Lưu trữ &amp; Bảo mật (100% Offline Filestore)">
+                            <field name="attachment_file" filename="attachment_filename"/>
+                            <field name="attachment_filename" invisible="1"/>
+                            <field name="file_size_display"/>
+                            <field name="security_level"/>
+                            <field name="allowed_user_ids" widget="many2many_tags" invisible="security_level != 'restricted'"/>
+                            <field name="allowed_lecturer_ids" widget="many2many_tags" invisible="security_level != 'restricted'"/>
+                        </group>
+                    </group>
+
+                    <group string="Kiểm duyệt &amp; Rà soát Thư viện" invisible="review_state == 'pending_review' and not reviewer_id">
+                        <group>
+                            <field name="reviewer_id" readonly="1"/>
+                            <field name="review_date" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="review_notes"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Tóm tắt &amp; Nội dung" name="desc">
+                            <field name="description" placeholder="Tóm tắt nội dung văn bản, từ khóa tìm kiếm..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_faculty_library_document_search" model="ir.ui.view">
+        <field name="name">faculty.library.document.search</field>
+        <field name="model">faculty.library.document</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm Tài liệu Thư viện">
+                <field name="name" string="Tên hoặc mã" filter_domain="['|', ('name', 'ilike', self), ('code', 'ilike', self)]"/>
+                <field name="category_id"/>
+                <field name="author_id"/>
+                <field name="course_id"/>
+                <separator/>
+                <filter name="pending_review" string="Cổng chờ Admin rà soát" domain="[('review_state', '=', 'pending_review')]"/>
+                <filter name="approved_docs" string="Đã lưu Thư viện chính thức" domain="[('review_state', '=', 'approved')]"/>
+                <separator/>
+                <filter name="syllabus_docs" string="Đề cương chi tiết" domain="[('document_type', '=', 'syllabus')]"/>
+                <filter name="study_materials" string="Học liệu / Ngân hàng đề" domain="[('document_type', 'in', ['study_material', 'question_bank'])]"/>
+                <filter name="books" string="Sách / Giáo trình" domain="[('document_type', '=', 'book')]"/>
+                <filter name="papers" string="Bài báo &amp; Kỷ yếu" domain="[('document_type', '=', 'scientific_paper')]"/>
+                <group expand="0" string="Gom nhóm theo">
+                    <filter name="group_category" string="Thư mục" context="{'group_by': 'category_id'}"/>
+                    <filter name="group_type" string="Loại tài liệu" context="{'group_by': 'document_type'}"/>
+                    <filter name="group_author" string="Tác giả" context="{'group_by': 'author_id'}"/>
+                    <filter name="group_security" string="Cấp độ bảo mật" context="{'group_by': 'security_level'}"/>
+                    <filter name="group_review" string="Trạng thái duyệt" context="{'group_by': 'review_state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_faculty_library_document" model="ir.actions.act_window">
+        <field name="name">Thư viện nhỏ của Khoa</field>
+        <field name="res_model">faculty.library.document</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_faculty_library_document_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Tra cứu và lưu trữ Tài liệu, Đề cương, Giáo trình, Kỷ yếu của Khoa!
+            </p>
+            <p>
+                Lưu trữ 100% offline nội bộ an toàn với 4 cấp độ tiếp cận và Cổng Admin rà soát kiểm duyệt tự động từ các phân hệ NCKH và Giảng dạy.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_faculty_library_category" model="ir.actions.act_window">
+        <field name="name">Thư mục Thư viện</field>
+        <field name="res_model">faculty.library.category</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- MENUITEMS: TRỤ CỘT 3 & THƯ VIỆN -->
+    <menuitem id="menu_faculty_other_work_action"
+              name="Hoạt động khác &amp; Giao việc"
+              parent="menu_faculty_other_work_root"
+              action="action_faculty_other_work"
+              sequence="10"/>
+
+    <menuitem id="menu_faculty_stream_assignment_action"
+              name="Phân công 6 Mảng Chức năng"
+              parent="menu_faculty_other_work_root"
+              action="action_faculty_stream_assignment"
+              sequence="20"/>
+
+    <menuitem id="menu_faculty_library_document_action"
+              name="Thư viện nhỏ của Khoa"
+              parent="menu_faculty_other_work_root"
+              action="action_faculty_library_document"
+              sequence="30"/>
+
+    <menuitem id="menu_faculty_library_category_action"
+              name="Thư mục Thư viện"
+              parent="menu_faculty_other_work_root"
+              action="action_faculty_library_category"
+              sequence="40"
+              groups="faculty_work_mgmt.group_faculty_dean"/>
+</odoo>
