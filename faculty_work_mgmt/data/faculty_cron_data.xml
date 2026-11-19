@@ -33,6 +33,17 @@
             <field name="interval_type">days</field>
             <field name="active" eval="True"/>
         </record>
+
+        <!-- 4. Cron Job tự động ghi Sổ cái các buổi giảng đã diễn ra hàng đêm -->
+        <record id="cron_faculty_post_past_sessions" model="ir.cron">
+            <field name="name">Khoa Đào tạo: Tự động ghi Sổ cái các buổi giảng đã diễn ra hàng đêm</field>
+            <field name="model_id" ref="model_faculty_teaching_session"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_post_past_sessions()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
     </data>
 </odoo>
 

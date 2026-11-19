@@ -43,15 +43,14 @@ class FacultyReturnWizard(models.TransientModel):
             rec.message_post(body=_('Yêu cầu chỉnh sửa lại. Lý do: %s') % self.reason)
             # Schedule activity for each selected participant
             for p in participants:
-                partner = getattr(p, 'lecturer_id', None)
-                if partner:
-                    partner = partner.partner_id if hasattr(partner, 'partner_id') else partner
-                    if partner:
-                        rec.activity_schedule(
-                            'mail.activity_data_warning',
-                            summary=_('Cần chỉnh sửa sản phẩm'),
-                            note=self.reason,
-                            user_id=partner.id,
-                        )
+                lec = getattr(p, 'lecturer_id', None)
+                if lec:
+                    user_id = lec.user_id.id if lec.user_id else self.env.user.id
+                    rec.activity_schedule(
+                        'mail.mail_activity_data_warning',
+                        summary=_('Cần chỉnh sửa sản phẩm'),
+                        note=self.reason,
+                        user_id=user_id,
+                    )
         return {'type': 'ir.actions.act_window_close'}
 

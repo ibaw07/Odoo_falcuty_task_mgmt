@@ -124,6 +124,12 @@ class FacultyTitleNorm(models.Model):
 
     name = fields.Char(string='Chức danh / Vị trí', required=True, placeholder='VD: Giảng viên, Giảng viên chính, Giáo sư...')
     code = fields.Char(string='Mã chức danh', required=True, index=True)
+    academic_rank = fields.Selection([
+        ('tro_giang', 'Trợ giảng'),
+        ('giang_vien', 'Giảng viên'),
+        ('giang_vien_chinh', 'Giảng viên chính'),
+        ('giang_vien_cao_cap', 'Giảng viên cao cấp'),
+    ], string='Chức danh', index=True)
     academic_title = fields.Selection([
         ('none', 'Không'),
         ('assoc_prof', 'Phó Giáo sư'),
@@ -141,37 +147,183 @@ class FacultyTitleNorm(models.Model):
                                 help='Giờ chuẩn Nghiên cứu khoa học tối thiểu hàng năm.')
     other_norm = fields.Float(string='Định mức Hoạt động khác (giờ/năm)', default=100.0, required=True,
                              help='Giờ chuẩn tham gia công tác chuyên môn, Đảng, đoàn thể, tuyển sinh...')
-    notes = fields.Text(string='Găn chú / Căn cứ pháp lý')
+    notes = fields.Text(string='Ghi chú / Căn cứ pháp lý')
+
+    @api.onchange('academic_rank')
+    def _onchange_academic_rank(self):
+        if self.academic_rank:
+            if not self.code:
+                self.code = self.academic_rank
+            if not self.name:
+                self.name = dict(self._fields['academic_rank'].selection).get(self.academic_rank, '')
 
 
 class FacultyNormReduction(models.Model):
     _name = 'faculty.norm.reduction'
-    _description = 'Quy định Miễn giảm Định mức'
-    _inherit = ['department.back.to.list.mixin']
-    _order = 'reduction_type, id'
+    _description = 'Bảng Miễn giảm Định mức Thủ công'
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'department.back.to.list.mixin']
+    _order = 'academic_year_id desc, lecturer_id asc, id desc'
 
-    name = fields.Char(string='Tên chế độ miễn giảm', required=True, placeholder='VD: Trưởng bộ môn, Đi học thạc sĩ/tiến sĩ >= 4 tuần...')
+    lecturer_id = fields.Many2one('faculty.lecturer', string='Giảng viên', required=True, ondelete='cascade', index=True, tracking=True)
+    academic_year_id = fields.Many2one(
+        'faculty.academic.year',
+        string='Năm học',
+        required=True,
+        default=lambda self: self.env['faculty.academic.year'].search([('is_current', '=', True)], limit=1).id or False,
+        index=True,
+        tracking=True
+    )
+
+    reason_preset = fields.Selection([
+        ('head_dept', 'Kiêm nhiệm Trưởng bộ môn (giảm 30%)'),
+        ('vice_head_dept', 'Kiêm nhiệm Phó Trưởng bộ môn (giảm 20%)'),
+        ('maternity', 'Nghỉ thai sản / Nuôi con nhỏ (giảm 50%)'),
+        ('study', 'Cử đi học / Bồi dưỡng nâng cao (giảm 50%)'),
+        ('illness', 'Nghỉ điều trị bệnh dài ngày (giảm 50%)'),
+        ('new_lecturer', 'Giảng viên mới / Tập sự (giảm 30% GD)'),
+        ('special', 'Đặc cách / Miễn giảm theo Quyết định (giảm 20%)'),
+    ], string='Gợi ý lý do nhanh', store=False)
+
+    name = fields.Char(string='Lý do miễn giảm', required=True, tracking=True,
+                       placeholder='VD: Kiêm nhiệm Trưởng bộ môn, Thai sản, Đi học tiến sĩ >= 4 tuần...')
+    percentage = fields.Float(string='Tỷ lệ giảm (%)', required=True, default=0.0, tracking=True,
+                              help='Tỷ lệ phần trăm giảm định mức (từ 0% đến 100%).')
+    scope = fields.Selection([
+        ('teaching', 'Giảng dạy'),
+        ('research', 'NCKH'),
+        ('both', 'Cả hai (Giảng dạy & NCKH)'),
+    ], string='Phạm vi áp dụng', required=True, default='both', tracking=True,
+       help='Phạm vi áp dụng miễn giảm: Giảng dạy, NCKH, hoặc Cả hai. Hoạt động khác không được miễn giảm.')
+
+    proof_file = fields.Binary(string='File minh chứng tải lên', attachment=True)
+    proof_filename = fields.Char(string='Tên file minh chứng')
+
+    teaching_hours_reduced = fields.Float(
+        string='Giờ GD giảm (tiết)',
+        compute='_compute_reduced_hours',
+        store=True,
+        help='Số giờ giảng dạy được giảm quy đổi theo định mức gốc của giảng viên.'
+    )
+    research_hours_reduced = fields.Float(
+        string='Giờ NCKH giảm (giờ)',
+        compute='_compute_reduced_hours',
+        store=True,
+        help='Số giờ NCKH được giảm quy đổi theo định mức gốc của giảng viên.'
+    )
+
+    notes = fields.Text(string='Ghi chú / Căn cứ pháp lý')
+
+    # Các trường tương thích ngược
     reduction_type = fields.Selection([
         ('position', 'Chức vụ lãnh đạo / Kiêm nhiệm'),
         ('study', 'Cử đi học / Bồi dưỡng (>= 4 tuần)'),
         ('maternity', 'Nghỉ thai sản / Ốm đau dài hạn'),
         ('special', 'Đặc cách / Miễn giảm khác'),
-    ], string='Loại miễn giảm', required=True, default='position')
-    position_title = fields.Char(string='Chức danh kiêm nhiệm')
-    percent_teaching = fields.Float(string='% Giảm Giảng dạy', default=0.0)
-    percent_research = fields.Float(string='% Giảm NCKH', default=0.0)
-    percent_other = fields.Float(string='% Giảm HĐ khác', default=0.0)
-    study_weeks = fields.Integer(string='Số tuần đi học (>= 4 tuần)', default=0,
-                                 help='Nếu đi học >= 4 tuần, tỷ lệ giảm tự động = (Số tuần / 44) * 100%')
-    notes = fields.Text(string='Ghi chú / Căn cứ')
+    ], string='Loại miễn giảm cũ', default='position')
+    position_title = fields.Char(string='Chức danh kiêm nhiệm cũ')
+    percent_teaching = fields.Float(string='% Giảm Giảng dạy cũ', compute='_compute_legacy_percents', store=False)
+    percent_research = fields.Float(string='% Giảm NCKH cũ', compute='_compute_legacy_percents', store=False)
+    percent_other = fields.Float(string='% Giảm HĐ khác cũ', default=0.0)
+    study_weeks = fields.Integer(string='Số tuần đi học (>= 4 tuần)', default=0)
 
-    @api.onchange('study_weeks', 'reduction_type')
-    def _onchange_study_weeks(self):
-        if self.reduction_type == 'study' and self.study_weeks >= 4:
-            calc_ratio = min((self.study_weeks / 44.0) * 100.0, 100.0)
-            self.percent_teaching = round(calc_ratio, 2)
-            self.percent_research = round(calc_ratio, 2)
-            self.percent_other = round(calc_ratio, 2)
+    @api.onchange('reason_preset')
+    def _onchange_reason_preset(self):
+        preset_map = {
+            'head_dept': ('Kiêm nhiệm Trưởng bộ môn', 30.0, 'both'),
+            'vice_head_dept': ('Kiêm nhiệm Phó Trưởng bộ môn', 20.0, 'both'),
+            'maternity': ('Nghỉ thai sản / Nuôi con nhỏ', 50.0, 'both'),
+            'study': ('Cử đi học / Bồi dưỡng nâng cao', 50.0, 'both'),
+            'illness': ('Nghỉ điều trị bệnh dài ngày', 50.0, 'both'),
+            'new_lecturer': ('Giảng viên mới / Tập sự', 30.0, 'teaching'),
+            'special': ('Miễn giảm đặc cách theo Quyết định', 20.0, 'both'),
+        }
+        if self.reason_preset and self.reason_preset in preset_map:
+            reason_text, pct, sc = preset_map[self.reason_preset]
+            if not self.name:
+                self.name = reason_text
+            if not self.percentage:
+                self.percentage = pct
+            self.scope = sc
+
+    @api.depends('lecturer_id.teaching_norm_base', 'lecturer_id.research_norm_base', 'percentage', 'scope')
+    def _compute_reduced_hours(self):
+        for rec in self:
+            t_base = rec.lecturer_id.teaching_norm_base if rec.lecturer_id else 0.0
+            r_base = rec.lecturer_id.research_norm_base if rec.lecturer_id else 0.0
+            pct = (rec.percentage / 100.0) if rec.percentage else 0.0
+            rec.teaching_hours_reduced = round(t_base * pct, 2) if rec.scope in ('teaching', 'both') else 0.0
+            rec.research_hours_reduced = round(r_base * pct, 2) if rec.scope in ('research', 'both') else 0.0
+
+    def _compute_legacy_percents(self):
+        for rec in self:
+            rec.percent_teaching = rec.percentage if rec.scope in ('teaching', 'both') else 0.0
+            rec.percent_research = rec.percentage if rec.scope in ('research', 'both') else 0.0
+
+    @api.constrains('percentage')
+    def _check_percentage_value(self):
+        for rec in self:
+            if rec.percentage < 0.0:
+                raise ValidationError(_('Tỷ lệ miễn giảm không được nhỏ hơn 0%!'))
+            if rec.percentage > 100.0:
+                raise ValidationError(_('Tỷ lệ miễn giảm của một mục không được vượt quá trần tối đa 100%!'))
+
+    @api.constrains('lecturer_id', 'academic_year_id', 'percentage', 'scope')
+    def _check_total_percentage_limit(self):
+        for rec in self:
+            if not rec.lecturer_id or not rec.academic_year_id:
+                continue
+            all_records = self.search([
+                ('lecturer_id', '=', rec.lecturer_id.id),
+                ('academic_year_id', '=', rec.academic_year_id.id),
+            ])
+            # Kiểm tra trần 100% cho Giảng dạy
+            teaching_recs = all_records.filtered(lambda r: r.scope in ('teaching', 'both'))
+            total_t = sum(teaching_recs.mapped('percentage'))
+            if total_t > 100.0:
+                raise ValidationError(_(
+                    'Tổng tỷ lệ miễn giảm Giảng dạy của Giảng viên "%(name)s" trong năm học %(year)s là %(total).1f%%, vượt quá trần tối đa 100%%!',
+                    name=rec.lecturer_id.name,
+                    year=rec.academic_year_id.name,
+                    total=total_t
+                ))
+            # Kiểm tra trần 100% cho NCKH
+            research_recs = all_records.filtered(lambda r: r.scope in ('research', 'both'))
+            total_r = sum(research_recs.mapped('percentage'))
+            if total_r > 100.0:
+                raise ValidationError(_(
+                    'Tổng tỷ lệ miễn giảm NCKH của Giảng viên "%(name)s" trong năm học %(year)s là %(total).1f%%, vượt quá trần tối đa 100%%!',
+                    name=rec.lecturer_id.name,
+                    year=rec.academic_year_id.name,
+                    total=total_r
+                ))
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super(FacultyNormReduction, self).create(vals_list)
+        Balance = self.env['faculty.workload.balance']
+        for rec in records:
+            if rec.lecturer_id:
+                Balance.recompute_for_lecturer(rec.lecturer_id.id, rec.academic_year_id.id if rec.academic_year_id else None)
+        return records
+
+    def write(self, vals):
+        old_pairs = set((rec.lecturer_id.id, rec.academic_year_id.id if rec.academic_year_id else None) for rec in self if rec.lecturer_id)
+        res = super(FacultyNormReduction, self).write(vals)
+        Balance = self.env['faculty.workload.balance']
+        for rec in self:
+            if rec.lecturer_id:
+                old_pairs.add((rec.lecturer_id.id, rec.academic_year_id.id if rec.academic_year_id else None))
+        for lec_id, year_id in old_pairs:
+            Balance.recompute_for_lecturer(lec_id, year_id)
+        return res
+
+    def unlink(self):
+        old_pairs = set((rec.lecturer_id.id, rec.academic_year_id.id if rec.academic_year_id else None) for rec in self if rec.lecturer_id)
+        res = super(FacultyNormReduction, self).unlink()
+        Balance = self.env['faculty.workload.balance']
+        for lec_id, year_id in old_pairs:
+            Balance.recompute_for_lecturer(lec_id, year_id)
+        return res
 
 
 class FacultyNormConfig(models.Model):
@@ -357,3 +509,53 @@ class FacultyWorkflowStep(models.Model):
     attachment_template_filename = fields.Char(string='Tên file biểu mẫu')
     responsible_role = fields.Char(string='Vai trò thực hiện', default='Giảng viên / Giáo vụ')
     notes = fields.Text(string='Ghi chú / Yêu cầu chi tiết')
+
+
+class FacultyConversionFactor(models.Model):
+    _name = 'faculty.conversion.factor'
+    _description = 'Danh mục Hệ số Quy đổi Giờ chuẩn'
+    _inherit = ['department.back.to.list.mixin']
+    _order = 'category asc, sequence asc, id asc'
+
+    sequence = fields.Integer(string='STT', default=10)
+    name = fields.Char(string='Tên hoạt động / Công việc quy đổi', required=True,
+                       placeholder='VD: Lên lớp lý thuyết, Coi thi, Chấm thi tự luận, Bài báo WoS/Scopus...')
+    code = fields.Char(string='Mã quy chuẩn', required=True, index=True)
+    category = fields.Selection([
+        ('teaching', '1. Giảng dạy'),
+        ('research', '2. Nghiên cứu khoa học'),
+        ('other', '3. Hoạt động khác'),
+    ], string='Nhóm công việc', required=True, default='teaching', index=True)
+    teaching_branch = fields.Selection([
+        ('direct', 'Giờ lên lớp trực tiếp (b)'),
+        ('converted', 'Giờ quy đổi giảng dạy khác'),
+    ], string='Nhánh giảng dạy', default='converted',
+       help='Giờ lên lớp trực tiếp dùng để tính biến b; Giờ quy đổi giảng dạy khác cộng với b thành tổng a.')
+    unit = fields.Char(string='Đơn vị tính', default='Tiết / Bài / Buổi / Bài báo', required=True)
+    coefficient = fields.Float(string='Hệ số quy đổi', default=1.0, required=True,
+                               help='Số lượng * Hệ số = Giờ chuẩn quy đổi.')
+    notes = fields.Text(string='Căn cứ quy chuẩn / Ghi chú')
+    active = fields.Boolean(string='Đang áp dụng', default=True)
+
+
+class ResConfigSettings(models.TransientModel):
+    _inherit = 'res.config.settings'
+
+    rate_t_to_r = fields.Float(
+        string='Hệ số bù trừ: Giảng dạy ➔ NCKH',
+        default=1.0,
+        config_parameter='faculty_work_mgmt.rate_t_to_r',
+        help='Tỷ lệ quy đổi khi lấy giờ giảng dạy thừa ban đầu (m = a - A) bù sang giờ NCKH thiếu (c < C).'
+    )
+    rate_r_to_t = fields.Float(
+        string='Hệ số bù trừ: NCKH ➔ Giảng dạy',
+        default=1.0,
+        config_parameter='faculty_work_mgmt.rate_r_to_t',
+        help='Tỷ lệ quy đổi khi lấy giờ NCKH thừa ban đầu (o = c - C) bù sang giờ giảng dạy thiếu (a < A).'
+    )
+    overtime_teaching_rate = fields.Float(
+        string='Đơn giá thanh toán 1 giờ giảng vượt (VNĐ)',
+        default=150000.0,
+        config_parameter='faculty_work_mgmt.overtime_teaching_rate',
+        help='Đơn giá thanh toán cho mỗi giờ lên lớp vượt n = max(0, b - B) khi giảng viên hoàn thành nhiệm vụ.'
+    )

@@ -1,0 +1,235 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Kien truc Module faculty_work_mgmt (Odoo 20)",
+    "subtitle": "So do kien truc tong the quan ly khoi luong cong viec giang vien",
+    "output": ".archify/architecture-faculty-work-mgmt-20261104-171500/faculty_architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/ibaw07/Odoo_falcuty_task_mgmt.git",
+      "revision": "69a8412b6cabc23b578718363b2bd50c94adcce5"
+    }
+  },
+  "components": [
+    {
+      "id": "lecturer",
+      "type": "external",
+      "icon": "person",
+      "label": "Giang vien",
+      "sublabel": "Ke khai & tra cuu",
+      "pos": [40, 50],
+      "size": [130, 60]
+    },
+    {
+      "id": "head",
+      "type": "external",
+      "icon": "person",
+      "label": "Truong khoa",
+      "sublabel": "Phe duyet & giam sat",
+      "pos": [40, 160],
+      "size": [130, 60]
+    },
+    {
+      "id": "web_client",
+      "type": "frontend",
+      "icon": "frontend",
+      "label": "Odoo Web Client",
+      "sublabel": "OWL 3 UI Responsive",
+      "pos": [280, 100],
+      "size": [160, 64],
+      "sources": [{ "path": "faculty_work_mgmt/views/faculty_menus.xml", "line": 1 }]
+    },
+    {
+      "id": "dashboard",
+      "type": "frontend",
+      "icon": "calendar",
+      "label": "Dashboard & Lich",
+      "sublabel": "KPI, Canh bao, Lich bieu",
+      "pos": [560, 50],
+      "size": [170, 64],
+      "sources": [{ "path": "faculty_work_mgmt/views/faculty_dashboard_calendar_views.xml", "line": 1 }]
+    },
+    {
+      "id": "reports",
+      "type": "frontend",
+      "icon": "briefcase",
+      "label": "Bao cao & Wizard",
+      "sublabel": "QWeb PDF & Excel Export",
+      "pos": [560, 160],
+      "size": [170, 64],
+      "sources": [{ "path": "faculty_work_mgmt/reports/faculty_reports.xml", "line": 1 }]
+    },
+    {
+      "id": "teaching_mod",
+      "type": "backend",
+      "label": "Giang day",
+      "sublabel": "Hoc phan, Lich giang",
+      "tag": "teaching",
+      "pos": [40, 300],
+      "size": [140, 64],
+      "sources": [{ "path": "faculty_work_mgmt/models/faculty_teaching.py", "line": 1 }]
+    },
+    {
+      "id": "exam_mod",
+      "type": "backend",
+      "label": "Khao thi & Huong dan",
+      "sublabel": "Coi cham thi, Khoa luan",
+      "tag": "exam/thesis",
+      "pos": [280, 300],
+      "size": [160, 64],
+      "sources": [{ "path": "faculty_work_mgmt/models/faculty_exam_internship.py", "line": 1 }]
+    },
+    {
+      "id": "research_mod",
+      "type": "backend",
+      "label": "Nghien cuu Khoa hoc",
+      "sublabel": "Bai bao, De tai, Sach",
+      "tag": "research",
+      "pos": [560, 300],
+      "size": [170, 64],
+      "sources": [{ "path": "faculty_work_mgmt/models/faculty_research.py", "line": 1 }]
+    },
+    {
+      "id": "other_mod",
+      "type": "backend",
+      "label": "Hoat dong khac",
+      "sublabel": "Doan the, Tuyen sinh",
+      "tag": "other",
+      "pos": [860, 300],
+      "size": [150, 64],
+      "sources": [{ "path": "faculty_work_mgmt/models/faculty_other_work.py", "line": 1 }]
+    },
+    {
+      "id": "quota_cfg",
+      "type": "backend",
+      "label": "Dinh muc & Mien giam",
+      "sublabel": "Khung chuc danh, ty le %",
+      "pos": [40, 440],
+      "size": [140, 64],
+      "sources": [{ "path": "faculty_work_mgmt/models/faculty_config.py", "line": 1 }]
+    },
+    {
+      "id": "ledger_core",
+      "type": "backend",
+      "label": "So cai Gio chuan",
+      "sublabel": "Staging -> Posted (Lock)",
+      "tag": "ACID Ledger",
+      "pos": [280, 440],
+      "size": [160, 64],
+      "sources": [{ "path": "faculty_work_mgmt/models/faculty_hour_ledger.py", "line": 1 }]
+    },
+    {
+      "id": "balance_engine",
+      "type": "backend",
+      "label": "Dong co Can doi Bu tru",
+      "sublabel": "Thuat toan m <-> c, o <-> a",
+      "tag": "Math A,B,C,a,b,c",
+      "pos": [560, 440],
+      "size": [170, 64],
+      "sources": [{ "path": "faculty_work_mgmt/models/faculty_hour_ledger.py", "line": 120 }]
+    },
+    {
+      "id": "budget_mod",
+      "type": "backend",
+      "label": "Du toan & Quyet toan",
+      "sublabel": "Chi tra gio thua (n * don gia)",
+      "tag": "Payroll",
+      "pos": [860, 440],
+      "size": [150, 64],
+      "sources": [{ "path": "faculty_work_mgmt/models/faculty_config.py", "line": 200 }]
+    },
+    {
+      "id": "orm_core",
+      "type": "backend",
+      "brand": "python",
+      "label": "Odoo 20 Server",
+      "sublabel": "Python 3.12 / Odoo ORM",
+      "pos": [150, 580],
+      "size": [170, 64],
+      "sources": [{ "path": "faculty_work_mgmt/__manifest__.py", "line": 1 }]
+    },
+    {
+      "id": "postgres_db",
+      "type": "database",
+      "brand": "postgresql",
+      "label": "PostgreSQL 16",
+      "sublabel": "ACID But toan So cai",
+      "tag": "Relational",
+      "pos": [470, 580],
+      "size": [170, 64]
+    },
+    {
+      "id": "file_store",
+      "type": "database",
+      "icon": "database",
+      "label": "Thu vien so DMS",
+      "sublabel": "Minh chung PDF & Quy che",
+      "pos": [780, 580],
+      "size": [170, 64],
+      "sources": [{ "path": "faculty_work_mgmt/models/faculty_other_work.py", "line": 80 }]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Phan he Nhap lieu & Ke khai Cong viec",
+      "wraps": ["teaching_mod", "exam_mod", "research_mod", "other_mod"]
+    },
+    {
+      "kind": "region",
+      "label": "Loi Quan ly Gio, So cai & Can doi Bu tru",
+      "wraps": ["quota_cfg", "ledger_core", "balance_engine", "budget_mod"]
+    },
+    {
+      "kind": "region",
+      "label": "Ha tang Ung dung & Co so Du lieu",
+      "wraps": ["orm_core", "postgres_db", "file_store"]
+    }
+  ],
+  "connections": [
+    { "id": "conn-lecturer-web", "from": "lecturer", "to": "web_client", "label": "Ke khai gio" },
+    { "id": "conn-head-web", "from": "head", "to": "web_client", "label": "Phe duyet", "variant": "emphasis" },
+    { "id": "conn-web-dash", "from": "web_client", "to": "dashboard", "label": "Xem KPI" },
+    { "id": "conn-web-rep", "from": "web_client", "to": "reports", "label": "Xuat bao cao" },
+    { "id": "conn-teach-ledger", "from": "teaching_mod", "to": "ledger_core", "label": "Ghi gio giang", "variant": "dashed" },
+    { "id": "conn-exam-ledger", "from": "exam_mod", "to": "ledger_core", "label": "Quy doi gio", "variant": "dashed" },
+    { "id": "conn-res-ledger", "from": "research_mod", "to": "ledger_core", "label": "Quy doi NCKH", "variant": "dashed" },
+    { "id": "conn-other-ledger", "from": "other_mod", "to": "ledger_core", "label": "Gio khac", "variant": "dashed" },
+    { "id": "conn-quota-bal", "from": "quota_cfg", "to": "ledger_core", "label": "Dinh muc" },
+    { "id": "conn-ledger-bal", "from": "ledger_core", "to": "balance_engine", "label": "Tong hop posted", "variant": "emphasis" },
+    { "id": "conn-bal-budget", "from": "balance_engine", "to": "budget_mod", "label": "Chot gio thua n" },
+    { "id": "conn-ledger-db", "from": "ledger_core", "to": "postgres_db", "label": "Ghi but toan", "variant": "security" },
+    { "id": "conn-orm-db", "from": "orm_core", "to": "postgres_db", "label": "ORM SQL" },
+    { "id": "conn-other-dms", "from": "other_mod", "to": "file_store", "label": "Minh chung PDF", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Kien truc Odoo 20",
+      "items": [
+        "Module faculty_work_mgmt chay tren nen Odoo 20 Community va Python 3.12+",
+        "Giao dien OWL 3 responsive ho tro 100% tieng Viet, thong ke KPI truc quan"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Co che So cai (Ledger Pattern)",
+      "items": [
+        "Tach biet to khai va but toan gio: staging -> posted -> cancelled",
+        "Ham khoa duyet _lock_and_post() dung SELECT ... FOR UPDATE SKIP LOCKED",
+        "Huy giao dich tu dong sinh but toan dao (reversal) dam bao toan ven"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Thuat toan Can doi Bu tru Cheo",
+      "items": [
+        "He thong tham so cot loi: A, B, C, a, b, c, m, n, o",
+        "Bu Giang day sang NCKH: m -> c (khi c >= 25% C) cho den khi c_sau = C",
+        "Bu NCKH sang Giang day: o -> a cho den khi a_sau = A",
+        "Xet gio vuot n = max(0, b - B), thanh toan theo don gia quy dinh"
+      ]
+    }
+  ]
+}

@@ -39,18 +39,25 @@
                             <tbody>
                                 <t t-if="docs">
                                     <t t-foreach="docs" t-as="doc">
-                                        <t t-set="assignments" t-value="env['faculty.exam.assignment'].search([('student_class_id', '=', doc.student_class_id.id), ('semester_id', '=', doc.semester_id.id)])"/>
+                                        <t t-set="assignments" t-value="env['faculty.exam.assignment'].search([('class_course_id.class_id', '=', doc.student_class_id.id), ('semester_id', '=', doc.semester_id.id)])"/>
                                         <t t-set="stt" t-value="1"/>
                                         <t t-foreach="assignments" t-as="ass">
                                             <tr>
                                                 <td style="border: 1px solid #000; text-align: center;"><t t-esc="stt"/></td>
-                                                <td style="border: 1px solid #000;"><t t-esc="ass.student_class_id.name"/></td>
-                                                <td style="border: 1px solid #000;"><t t-esc="ass.class_course_id.name if ass.class_course_id else ''"/></td>
-                                                <td style="border: 1px solid #000; text-align: center;"><t t-esc="ass.exam_format or ''"/></td>
-                                                <td style="border: 1px solid #000; text-align: center;"><t t-esc="ass.exam_date.strftime('%d/%m/%Y') if ass.exam_date else ''"/></td>
+                                                <td style="border: 1px solid #000;"><t t-esc="ass.class_course_id.class_id.name if ass.class_course_id and ass.class_course_id.class_id else ''"/></td>
+                                                <td style="border: 1px solid #000;"><t t-esc="ass.class_course_id.course_id.name if ass.class_course_id and ass.class_course_id.course_id else (ass.class_course_id.name if ass.class_course_id else '')"/></td>
+                                                <td style="border: 1px solid #000; text-align: center;">
+                                                    <t t-if="ass.class_course_id and ass.class_course_id.exam_format">
+                                                        <t t-esc="dict(ass.class_course_id._fields['exam_format'].selection).get(ass.class_course_id.exam_format, ass.class_course_id.exam_format)"/>
+                                                    </t>
+                                                </td>
+                                                <td style="border: 1px solid #000; text-align: center;">
+                                                    <t t-if="ass.class_course_id and ass.class_course_id.exam_date">
+                                                        <t t-esc="ass.class_course_id.exam_date.strftime('%d/%m/%Y')"/>
+                                                    </t>
+                                                </td>
                                                 <td style="border: 1px solid #000;">
-                                                    <div>Coi 1: <t t-esc="ass.proctor_1_id.name if ass.proctor_1_id else ''"/></div>
-                                                    <div>Chấm 1: <t t-esc="ass.grader_1_id.name if ass.grader_1_id else ''"/></div>
+                                                    <div><strong><t t-esc="dict(ass._fields['role'].selection).get(ass.role, ass.role)"/>:</strong> <t t-esc="ass.lecturer_id.name if ass.lecturer_id else ''"/> (<t t-esc="ass.paper_count"/> bài/buổi)</div>
                                                 </td>
                                                 <td style="border: 1px solid #000;"><t t-esc="ass.notes or ''"/></td>
                                             </tr>

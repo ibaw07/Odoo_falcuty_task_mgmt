@@ -72,10 +72,10 @@ class FacultyCourse(models.Model):
     _name = 'faculty.course'
     _description = 'Học phần & Môn học'
     _inherit = ['mail.thread', 'mail.activity.mixin', 'department.back.to.list.mixin']
-    _order = 'stt asc, code asc'
+    _order = 'stt asc, id asc'
 
     # Số thứ tự đánh số tự động trên List view
-    stt = fields.Integer(string='STT', compute='_compute_stt', store=False)
+    stt = fields.Integer(string='STT', default=1, index=True)
     name = fields.Char(string='Tên học phần / Môn học', required=True, tracking=True, placeholder='VD: Lập trình Hướng đối tượng')
     code = fields.Char(string='Mã học phần', required=True, copy=False, index=True, tracking=True, placeholder='VD: IT201')
     curriculum_id = fields.Many2one('faculty.curriculum', string='Chương trình đào tạo',
@@ -109,12 +109,13 @@ class FacultyCourse(models.Model):
         ('code_curriculum_unique', 'unique(code, curriculum_id)', 'Mã học phần đã tồn tại trong Chương trình đào tạo này!'),
     ]
 
-    def _compute_stt(self):
-        """Đánh số thứ tự tự động để biết tổng số môn học Khoa đang quản lý"""
-        all_courses = self.search([], order='code asc, id asc')
-        stt_map = {cid: idx + 1 for idx, cid in enumerate(all_courses.ids)}
-        for rec in self:
-            rec.stt = stt_map.get(rec.id, 1)
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('stt') or vals.get('stt') == 1:
+                last_course = self.search([], order='stt desc, id desc', limit=1)
+                vals['stt'] = (last_course.stt or 0) + 1 if last_course else 1
+        return super().create(vals_list)
 
     @api.depends('lecture_hours', 'practice_hours')
     def _compute_total_hours(self):
@@ -584,9 +585,72 @@ class FacultyTeachingSession(models.Model):
         return records
 
     def write(self, vals):
+        # Thu thập trạng thái cũ trước khi cập nhật
+        old_data = {
+            rec.id: (rec.actual_lecturer_id.id, rec.date, rec.standard_hours)
+            for rec in self
+        }
         res = super(FacultyTeachingSession, self).write(vals)
+        today = fields.Date.today()
+        for rec in self:
+            old_lec_id, old_date, old_hours = old_data.get(rec.id, (False, False, 0.0))
+            # Nếu đổi giảng viên, hoặc lùi ngày sang tương lai, hoặc standard_hours <= 0:
+            # Xóa hoặc hủy bút toán cũ tương ứng trong faculty.hour.ledger để tránh bút toán mồ côi
+            need_cleanup = False
+            if old_lec_id and rec.actual_lecturer_id.id != old_lec_id:
+                need_cleanup = True
+            elif old_date and old_date <= today and rec.date and rec.date > today:
+                need_cleanup = True
+            elif rec.standard_hours <= 0:
+                need_cleanup = True
+
+            if need_cleanup:
+                old_ledgers = self.env['faculty.hour.ledger'].search([
+                    ('res_model', '=', self._name),
+                    ('res_id', '=', rec.id),
+                ])
+                for l in old_ledgers:
+                    if l.is_locked:
+                        raise UserError(_('Không thể điều chỉnh buổi học có bút toán Sổ cái đã chốt sổ: "%s"!') % l.name)
+                old_ledgers.unlink()
+
         self._post_to_ledger_if_due()
         return res
+
+    def unlink(self):
+        # Khi xóa buổi học, tự động xóa hoặc hủy bút toán cũ trong faculty.hour.ledger
+        session_ids = self.ids
+        ledgers = self.env['faculty.hour.ledger'].search([
+            ('res_model', '=', self._name),
+            ('res_id', 'in', session_ids),
+        ])
+        for l in ledgers:
+            if l.is_locked:
+                raise UserError(_('Không thể xóa buổi học có bút toán Sổ cái đã chốt sổ: "%s"!') % l.name)
+        ledgers.unlink()
+        return super(FacultyTeachingSession, self).unlink()
+
+    @api.model
+    def _cron_post_past_sessions(self):
+        """
+        Cron job chạy hàng đêm để tự động ghi Sổ cái các buổi giảng đã diễn ra (date <= today).
+        """
+        today = fields.Date.today()
+        # Tìm các buổi học đã diễn ra nhưng chưa có bút toán posted trong Sổ cái
+        existing_res_ids = set(self.env['faculty.hour.ledger'].search([
+            ('res_model', '=', self._name),
+            ('state', '=', 'posted'),
+        ]).mapped('res_id'))
+
+        unposted_sessions = self.search([
+            ('date', '<=', today),
+            ('actual_lecturer_id', '!=', False),
+            ('standard_hours', '>', 0),
+            ('id', 'not in', list(existing_res_ids) if existing_res_ids else [0]),
+        ])
+        if unposted_sessions:
+            unposted_sessions._post_to_ledger_if_due()
+        return True
 
     def _post_to_ledger_if_due(self):
         """
@@ -729,4 +793,16 @@ class FacultyAcademicChecklist(models.Model):
                 self.class_course_id.action_finish_exam()
 
         return True
+
+    def unlink(self):
+        chk_ids = self.ids
+        ledgers = self.env['faculty.hour.ledger'].search([
+            ('res_model', '=', self._name),
+            ('res_id', 'in', chk_ids),
+        ])
+        for l in ledgers:
+            if l.is_locked:
+                raise UserError(_('Không thể xóa bước việc checklist có bút toán Sổ cái đã chốt: "%s"!') % l.name)
+        ledgers.unlink()
+        return super(FacultyAcademicChecklist, self).unlink()
 

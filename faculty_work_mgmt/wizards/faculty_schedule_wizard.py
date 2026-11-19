@@ -29,20 +29,28 @@ class FacultyScheduleSuggestionWizard(models.TransientModel):
         Kết quả được lưu vào `suggestion_line_ids` và trả về view dạng list.
         """
         self.suggestion_line_ids.unlink()
-        teachers = self.course_id.teacher_ids if hasattr(self.course_id, 'teacher_ids') else self.env['res.users']
+        teachers = self.course_id.lecturer_ids
+        if not teachers and self.course_id.head_lecturer_id:
+            teachers = self.course_id.head_lecturer_id
         Session = self.env["faculty.teaching.session"]
         Exam = self.env["faculty.exam.assignment"]
         sessions = Session.search([("date", ">=", self.date_from), ("date", "<=", self.date_to)])
-        exams = Exam.search([("date", ">=", self.date_from), ("date", "<=", self.date_to)])
+        exams = Exam.search([
+            ("class_course_id.exam_date", "!=", False),
+            ("class_course_id.exam_date", ">=", self.date_from),
+            ("class_course_id.exam_date", "<=", self.date_to),
+        ])
         occupied = {t.id: set() for t in teachers}
         for rec in sessions:
-            if hasattr(rec, 'teacher_ids'):
-                for t in rec.teacher_ids:
-                    occupied.setdefault(t.id, set()).add((rec.date, getattr(rec, 'period', 'Sáng')))
+            lec = rec.actual_lecturer_id or rec.lecturer_id
+            if lec and lec.id in occupied and rec.date:
+                period_str = 'Sáng' if rec.session_time == 'morning' else 'Chiều'
+                occupied[lec.id].add((rec.date, period_str))
         for rec in exams:
-            if hasattr(rec, 'teacher_ids'):
-                for t in rec.teacher_ids:
-                    occupied.setdefault(t.id, set()).add((rec.date, getattr(rec, 'period', 'Sáng')))
+            lec = rec.lecturer_id
+            if lec and lec.id in occupied and rec.class_course_id.exam_date:
+                period_str = 'Sáng' if rec.class_course_id.exam_session == 'morning' else 'Chiều'
+                occupied[lec.id].add((rec.class_course_id.exam_date, period_str))
         free_lines = []
         cur_date = self.date_from
         while cur_date <= self.date_to:
@@ -75,7 +83,7 @@ class FacultyScheduleSuggestionLine(models.TransientModel):
         string="Wizard",
         ondelete="cascade",
     )
-    teacher_id = fields.Many2one("res.users", string="Giảng viên")
+    teacher_id = fields.Many2one("faculty.lecturer", string="Giảng viên")
     date = fields.Date(string="Ngày")
     period = fields.Selection([
         ("Sáng", "Sáng"),

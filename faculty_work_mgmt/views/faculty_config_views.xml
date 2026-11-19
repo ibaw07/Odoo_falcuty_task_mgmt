@@ -117,6 +117,7 @@
             <list string="Định mức Tiêu chuẩn theo Chức danh">
                 <field name="code"/>
                 <field name="name"/>
+                <field name="academic_rank"/>
                 <field name="academic_title"/>
                 <field name="academic_degree"/>
                 <field name="teaching_norm"/>
@@ -144,6 +145,7 @@
                     <group>
                         <group string="Phân loại">
                             <field name="code"/>
+                            <field name="academic_rank"/>
                             <field name="academic_title"/>
                             <field name="academic_degree"/>
                         </group>
@@ -162,9 +164,36 @@
     </record>
 
     <record id="action_faculty_title_norm" model="ir.actions.act_window">
-        <field name="name">Định mức chức danh &amp; Miễn giảm</field>
+        <field name="name">Khung định mức chức danh</field>
         <field name="res_model">faculty.title.norm</field>
         <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Cấu hình bảng định mức chuẩn theo Chức danh (Giờ Giảng dạy, Giờ NCKH, Giờ Hoạt động khác).
+            </p>
+        </field>
+    </record>
+
+    <!-- Miễn giảm định mức Search View -->
+    <record id="view_faculty_norm_reduction_search" model="ir.ui.view">
+        <field name="name">faculty.norm.reduction.search</field>
+        <field name="model">faculty.norm.reduction</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm Miễn giảm">
+                <field name="lecturer_id" string="Giảng viên"/>
+                <field name="academic_year_id" string="Năm học"/>
+                <field name="name" string="Lý do miễn giảm"/>
+                <filter string="Năm học hiện tại" name="filter_current_year" domain="[('academic_year_id.is_current', '=', True)]"/>
+                <separator/>
+                <filter string="Áp dụng Giảng dạy" name="filter_teaching" domain="[('scope', 'in', ['teaching', 'both'])]"/>
+                <filter string="Áp dụng NCKH" name="filter_research" domain="[('scope', 'in', ['research', 'both'])]"/>
+                <group>
+                    <filter string="Giảng viên" name="group_lecturer" context="{'group_by': 'lecturer_id'}"/>
+                    <filter string="Năm học" name="group_academic_year" context="{'group_by': 'academic_year_id'}"/>
+                    <filter string="Phạm vi" name="group_scope" context="{'group_by': 'scope'}"/>
+                </group>
+            </search>
+        </field>
     </record>
 
     <!-- Miễn giảm định mức List View -->
@@ -172,16 +201,71 @@
         <field name="name">faculty.norm.reduction.list</field>
         <field name="model">faculty.norm.reduction</field>
         <field name="arch" type="xml">
-            <list string="Quy định Miễn giảm Định mức" editable="bottom">
-                <field name="name"/>
-                <field name="reduction_type"/>
-                <field name="position_title"/>
-                <field name="percent_teaching"/>
-                <field name="percent_research"/>
-                <field name="percent_other"/>
-                <field name="study_weeks"/>
-                <field name="notes"/>
+            <list string="Bảng nhập liệu Miễn giảm thủ công" editable="bottom">
+                <field name="academic_year_id" options="{'no_create': True}"/>
+                <field name="lecturer_id" options="{'no_create': True}"/>
+                <field name="reason_preset" optional="show"/>
+                <field name="name" string="Lý do miễn giảm"/>
+                <field name="scope" widget="badge" decoration-info="scope == 'teaching'" decoration-success="scope == 'research'" decoration-primary="scope == 'both'"/>
+                <field name="percentage" string="Tỷ lệ giảm (%)"/>
+                <field name="teaching_hours_reduced" string="Giờ GD giảm"/>
+                <field name="research_hours_reduced" string="Giờ NCKH giảm"/>
+                <field name="proof_filename" invisible="1"/>
+                <field name="proof_file" filename="proof_filename" widget="binary" string="File minh chứng"/>
+                <field name="notes" optional="hide"/>
             </list>
+        </field>
+    </record>
+
+    <!-- Miễn giảm định mức Form View -->
+    <record id="view_faculty_norm_reduction_form" model="ir.ui.view">
+        <field name="name">faculty.norm.reduction.form</field>
+        <field name="model">faculty.norm.reduction</field>
+        <field name="arch" type="xml">
+            <form string="Bảng nhập liệu Miễn giảm thủ công">
+                <header>
+                    <button name="action_back_to_list" string="Quay lại danh sách" type="object" class="btn-secondary" icon="fa-arrow-left"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Lý do miễn giảm"/>
+                        <h1>
+                            <field name="name" placeholder="VD: Kiêm nhiệm Trưởng bộ môn, Nghỉ thai sản..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Thông tin Giảng viên &amp; Năm học">
+                            <field name="lecturer_id" options="{'no_create': True}"/>
+                            <field name="academic_year_id" options="{'no_create': True}"/>
+                            <field name="reason_preset"/>
+                        </group>
+                        <group string="Tỷ lệ &amp; Phạm vi Áp dụng">
+                            <field name="scope"/>
+                            <field name="percentage"/>
+                            <field name="teaching_hours_reduced" readonly="1"/>
+                            <field name="research_hours_reduced" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="File Minh chứng &amp; Căn cứ">
+                        <field name="proof_filename" invisible="1"/>
+                        <field name="proof_file" filename="proof_filename" widget="binary" string="File minh chứng tải lên"/>
+                        <field name="notes" placeholder="Căn cứ quyết định số, biên bản họp..."/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_faculty_norm_reduction" model="ir.actions.act_window">
+        <field name="name">Danh sách miễn giảm định mức</field>
+        <field name="res_model">faculty.norm.reduction</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_filter_current_year': 1, 'search_default_group_lecturer': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Tạo mục miễn giảm định mức thủ công cho giảng viên theo năm học.
+            </p>
         </field>
     </record>
 
@@ -452,11 +536,23 @@
               action="action_faculty_rank_config"
               sequence="20"/>
 
-    <menuitem id="menu_faculty_title_norm"
-              name="Định mức chức danh &amp; Miễn giảm"
+    <!-- Nhóm Menu: Định mức chức danh & miễn giảm (Duy nhất tại Cấu hình Khoa) -->
+    <menuitem id="menu_faculty_title_norm_root"
+              name="Định mức chức danh &amp; miễn giảm"
               parent="faculty_work_mgmt.menu_faculty_config_root"
-              action="action_faculty_title_norm"
               sequence="30"/>
+
+    <menuitem id="menu_faculty_title_norm"
+              name="Khung định mức theo chức danh"
+              parent="menu_faculty_title_norm_root"
+              action="action_faculty_title_norm"
+              sequence="10"/>
+
+    <menuitem id="menu_faculty_norm_reduction"
+              name="Danh sách miễn giảm định mức"
+              parent="menu_faculty_title_norm_root"
+              action="action_faculty_norm_reduction"
+              sequence="20"/>
 
     <menuitem id="menu_faculty_norm_config"
               name="Bảng quy chuẩn Giờ chuẩn động"
@@ -481,4 +577,162 @@
               parent="faculty_work_mgmt.menu_faculty_config_root"
               action="action_faculty_workflow_process"
               sequence="70"/>
+    <!-- =================================================================== -->
+    <!-- 8. DANH MỤC HỆ SỐ QUY ĐỔI GIỜ CHUẨN                                -->
+    <!-- =================================================================== -->
+    <record id="view_faculty_conversion_factor_search" model="ir.ui.view">
+        <field name="name">faculty.conversion.factor.search</field>
+        <field name="model">faculty.conversion.factor</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm Hệ số Quy đổi">
+                <field name="name" string="Tên hoạt động quy đổi"/>
+                <field name="code" string="Mã quy chuẩn"/>
+                <filter string="1. Giảng dạy" name="filter_teaching" domain="[('category', '=', 'teaching')]"/>
+                <filter string="Giờ lên lớp trực tiếp (b)" name="filter_direct" domain="[('teaching_branch', '=', 'direct')]"/>
+                <filter string="Giờ quy đổi GD khác" name="filter_converted" domain="[('teaching_branch', '=', 'converted')]"/>
+                <separator/>
+                <filter string="2. NCKH" name="filter_research" domain="[('category', '=', 'research')]"/>
+                <filter string="3. Hoạt động khác" name="filter_other" domain="[('category', '=', 'other')]"/>
+                <separator/>
+                <filter string="Đang áp dụng" name="filter_active" domain="[('active', '=', True)]"/>
+                <group>
+                    <filter string="Nhóm công việc" name="group_category" context="{'group_by': 'category'}"/>
+                    <filter string="Nhánh giảng dạy" name="group_branch" context="{'group_by': 'teaching_branch'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_faculty_conversion_factor_list" model="ir.ui.view">
+        <field name="name">faculty.conversion.factor.list</field>
+        <field name="model">faculty.conversion.factor</field>
+        <field name="arch" type="xml">
+            <list string="Danh mục Hệ số Quy đổi Giờ chuẩn" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="category" widget="badge"
+                       decoration-info="category == 'teaching'"
+                       decoration-success="category == 'research'"
+                       decoration-warning="category == 'other'"/>
+                <field name="teaching_branch"
+                       invisible="category != 'teaching'"
+                       widget="badge"
+                       decoration-primary="teaching_branch == 'direct'"
+                       decoration-info="teaching_branch == 'converted'"/>
+                <field name="unit"/>
+                <field name="coefficient"/>
+                <field name="notes" optional="hide"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_faculty_conversion_factor_form" model="ir.ui.view">
+        <field name="name">faculty.conversion.factor.form</field>
+        <field name="model">faculty.conversion.factor</field>
+        <field name="arch" type="xml">
+            <form string="Hệ số Quy đổi Giờ chuẩn">
+                <header>
+                    <button name="action_back_to_list" string="Quay lại danh sách" type="object" class="btn-secondary" icon="fa-arrow-left"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Tên hoạt động / Công việc quy đổi"/>
+                        <h1>
+                            <field name="name" placeholder="VD: Lên lớp lý thuyết, Coi thi, Bài báo WoS/Scopus..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Phân loại nhiệm vụ">
+                            <field name="code"/>
+                            <field name="category"/>
+                            <field name="teaching_branch" invisible="category != 'teaching'"/>
+                            <field name="sequence"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                        <group string="Quy chuẩn &amp; Đơn vị tính">
+                            <field name="unit"/>
+                            <field name="coefficient"/>
+                        </group>
+                    </group>
+                    <group string="Căn cứ quy chuẩn / Ghi chú">
+                        <field name="notes" placeholder="Căn cứ quyết định, thông tư ban hành định mức..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_faculty_conversion_factor" model="ir.actions.act_window">
+        <field name="name">Hệ số Quy đổi Giờ chuẩn</field>
+        <field name="res_model">faculty.conversion.factor</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_group_category': 1, 'search_default_filter_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Cấu hình bảng hệ số quy đổi động (Số lượng * Hệ số = Giờ chuẩn) cho 3 nhóm Giảng dạy, NCKH và Hoạt động khác.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_faculty_conversion_factor"
+              name="Hệ số quy đổi Giờ chuẩn"
+              parent="faculty_work_mgmt.menu_faculty_config_root"
+              action="action_faculty_conversion_factor"
+              sequence="32"/>
+
+    <!-- =================================================================== -->
+    <!-- 9. CẤU HÌNH THIẾT LẬP KHOA & BÙ TRỪ CHÉO (RES.CONFIG.SETTINGS)       -->
+    <!-- =================================================================== -->
+    <record id="res_config_settings_view_form_inherit_faculty" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.faculty</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="70"/>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Khoa Đào tạo" string="Khoa Đào tạo" name="faculty_work_mgmt">
+                    <block title="Hệ số Bù trừ chéo &amp; Đơn giá Giờ vượt" name="faculty_cross_offset_settings">
+                        <setting string="Giảng dạy ➔ NCKH (rate_t_to_r)" help="Hệ số quy đổi khi lấy giờ giảng dạy thừa ban đầu (m = a - A) bù sang giờ NCKH thiếu (c &lt; C, với c &gt;= 0.25*C).">
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="rate_t_to_r" class="oe_inline"/>
+                                </div>
+                            </div>
+                        </setting>
+                        <setting string="NCKH ➔ Giảng dạy (rate_r_to_t)" help="Hệ số quy đổi khi lấy giờ NCKH thừa ban đầu (o = c - C) bù sang giờ giảng dạy thiếu (a &lt; A).">
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="rate_r_to_t" class="oe_inline"/>
+                                </div>
+                            </div>
+                        </setting>
+                        <setting string="Đơn giá 1 giờ giảng vượt (VNĐ)" help="Đơn giá thanh toán cho mỗi giờ lên lớp vượt mốc 50% định mức (n = max(0, b - B)) khi giảng viên hoàn thành nhiệm vụ.">
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="overtime_teaching_rate" class="oe_inline"/>
+                                    <span class="ms-1">VNĐ / giờ</span>
+                                </div>
+                            </div>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_faculty_config_settings" model="ir.actions.act_window">
+        <field name="name">Cấu hình Hệ số &amp; Bù trừ chéo</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'faculty_work_mgmt', 'bin_size': False}</field>
+    </record>
+
+    <menuitem id="menu_faculty_config_settings"
+              name="Thiết lập Chung &amp; Bù trừ"
+              parent="faculty_work_mgmt.menu_faculty_config_root"
+              action="action_faculty_config_settings"
+              sequence="100"/>
 </odoo>

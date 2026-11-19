@@ -321,7 +321,7 @@ class FacultyOtherWork(models.Model):
         today = fields.Date.today()
         hr_managers = self.env['faculty.lecturer'].search([('can_manage_hr', '=', True)])
         if not hr_managers:
-            hr_managers = self.env['faculty.lecturer'].search([('position_title', 'in', ['dean', 'vice_dean'])], limit=1)
+            hr_managers = self.env['faculty.lecturer'].search([('admin_position', 'in', ['truong_khoa', 'pho_khoa'])])
         if not hr_managers:
             hr_managers = self.env['faculty.lecturer'].search([], limit=1)
 
@@ -363,7 +363,7 @@ class FacultyOtherWork(models.Model):
         today = fields.Date.today()
         task_officers = self.env['faculty.lecturer'].search([('can_edit_faculty_tasks', '=', True)])
         if not task_officers:
-            task_officers = self.env['faculty.lecturer'].search([('position_title', 'in', ['dean', 'vice_dean'])], limit=1)
+            task_officers = self.env['faculty.lecturer'].search([('admin_position', 'in', ['truong_khoa', 'pho_khoa'])])
         if not task_officers:
             return 0
 
@@ -760,7 +760,8 @@ class FacultyCalendarEvent(models.Model):
         updated_count = 0
 
         # -------------------------------------------------------------
-        # 1. Nhóm Giảng dạy & 3. Nhóm Báo cáo viên (faculty.teaching.session)
+        # -------------------------------------------------------------
+        # 1. Nhóm Giảng dạy (faculty.teaching.session)
         # -------------------------------------------------------------
         sessions = self.env['faculty.teaching.session'].search([
             ('date', '>=', today - timedelta(days=60)),
@@ -769,28 +770,25 @@ class FacultyCalendarEvent(models.Model):
         for sess in sessions:
             if not sess.date:
                 continue
-            is_morning = (sess.period == 'Sáng')
+            is_morning = (sess.session_time == 'morning')
             start_t = time(7, 30) if is_morning else time(13, 30)
             stop_t = time(11, 30) if is_morning else time(17, 30)
             start_dt = datetime.combine(sess.date, start_t)
             stop_dt = datetime.combine(sess.date, stop_t)
 
-            lead_lecturer = sess.lecturer_id or (sess.teacher_ids[0] if sess.teacher_ids else False)
-            course_name = sess.course_id.name if sess.course_id else 'Học phần'
-            class_name = sess.class_id.name if sess.class_id else 'Lớp'
-            room = sess.room or (sess.class_id.room if sess.class_id else 'Giảng đường Khoa')
+            lead_lecturer = sess.actual_lecturer_id or sess.lecturer_id
+            cc = sess.class_course_id
+            course = cc.course_id if cc else False
+            student_class = cc.class_id if cc else False
+            course_name = course.name if course else 'Học phần'
+            class_name = student_class.name if student_class else 'Lớp'
+            room = (cc.classroom if cc else False) or (student_class.classroom if student_class else False) or 'Giảng đường Khoa'
 
-            # Nếu có báo cáo viên thực tế -> Nhóm 3 (guest_speaker)
-            if sess.has_guest_speaker or sess.guest_speaker_name:
-                key = f"guest_speaker_session_{sess.id}"
-                cat = 'guest_speaker'
-                name = f"[Báo cáo viên] {sess.guest_speaker_name or 'Chuyên gia thực tế'} - HP {course_name} ({class_name})"
-                notes = f"Báo cáo viên thực tế: {sess.guest_speaker_name or ''}. Đơn vị: {sess.guest_speaker_org or ''}. Giảng viên phụ trách: {lead_lecturer.name if lead_lecturer else ''}."
-            else:
-                key = f"teaching_session_{sess.id}"
-                cat = 'teaching'
-                name = f"[Giảng dạy] {course_name} - {class_name} ({sess.period})"
-                notes = f"Lịch giảng: {sess.name or ''}. Số tiết: {sess.periods}. Giảng viên đứng lớp: {lead_lecturer.name if lead_lecturer else ''}. Trạng thái: {'Đã diễn ra' if sess.is_conducted else 'Sắp tới'}."
+            key = f"teaching_session_{sess.id}"
+            cat = 'teaching'
+            period_label = 'Sáng' if is_morning else 'Chiều'
+            name = f"[Giảng dạy] {course_name} - {class_name} ({period_label})"
+            notes = f"Lịch giảng: {course_name} - {class_name}. Số tiết: {sess.period_count}. Giảng viên đứng lớp: {lead_lecturer.name if lead_lecturer else ''}."
 
             vals = {
                 'name': name,
@@ -799,8 +797,8 @@ class FacultyCalendarEvent(models.Model):
                 'stop_datetime': stop_dt,
                 'location': room,
                 'lecturer_id': lead_lecturer.id if lead_lecturer else False,
-                'course_id': sess.course_id.id if sess.course_id else False,
-                'student_class_id': sess.class_id.id if sess.class_id else False,
+                'course_id': course.id if course else False,
+                'student_class_id': student_class.id if student_class else False,
                 'notes': notes,
                 'res_model': 'faculty.teaching.session',
                 'res_id': sess.id,
@@ -827,25 +825,29 @@ class FacultyCalendarEvent(models.Model):
             key_exam = f"exam_date_cc_{cc.id}"
             start_exam = datetime.combine(cc.exam_date, time(8, 0))
             stop_exam = datetime.combine(cc.exam_date, time(11, 0))
+            exam_fmt_label = dict(cc._fields['exam_format'].selection).get(cc.exam_format, '') if cc.exam_format else ''
+            q_src_label = dict(cc._fields['question_source'].selection).get(cc.question_source, '') if cc.question_source else ''
             vals_exam = {
-                'name': f"[Khảo thí] Lịch thi HP: {cc.course_id.name} - Lớp {cc.class_id.name}",
+                'name': f"[Khảo thí] Lịch thi HP: {cc.course_id.name if cc.course_id else ''} - Lớp {cc.class_id.name if cc.class_id else ''}",
                 'event_category': 'exam',
                 'start_datetime': start_exam,
                 'stop_datetime': stop_exam,
-                'location': cc.exam_room or cc.class_id.room or 'Phòng thi Khoa',
-                'lecturer_id': cc.lecturer_id.id if cc.lecturer_id else False,
+                'location': cc.classroom or (cc.class_id.classroom if cc.class_id else False) or 'Phòng thi Khoa',
+                'lecturer_id': cc.head_lecturer_id.id if cc.head_lecturer_id else False,
                 'course_id': cc.course_id.id if cc.course_id else False,
                 'student_class_id': cc.class_id.id if cc.class_id else False,
-                'notes': f"Hình thức thi: {cc.exam_format or ''}. Nguồn đề: {cc.exam_source or ''}. Sĩ số dự thi: {cc.total_students}.",
+                'notes': f"Hình thức thi: {exam_fmt_label}. Nguồn đề: {q_src_label}. Sĩ số dự thi: {cc.total_student_count}.",
                 'res_model': 'faculty.class.course',
                 'res_id': cc.id,
             }
             exist_exam = self.search([('event_key', '=', key_exam)], limit=1)
             if exist_exam:
                 exist_exam.write(vals_exam)
+                updated_count += 1
             else:
                 vals_exam['event_key'] = key_exam
                 self.create(vals_exam)
+                created_count += 1
 
             # Sự kiện 2: Hạn chấm thi nếu có
             if cc.grading_deadline:
@@ -853,12 +855,12 @@ class FacultyCalendarEvent(models.Model):
                 start_gr = datetime.combine(cc.grading_deadline, time(8, 0))
                 stop_gr = datetime.combine(cc.grading_deadline, time(17, 0))
                 vals_gr = {
-                    'name': f"[Hạn chấm thi] HP: {cc.course_id.name} - Lớp {cc.class_id.name}",
+                    'name': f"[Hạn chấm thi] HP: {cc.course_id.name if cc.course_id else ''} - Lớp {cc.class_id.name if cc.class_id else ''}",
                     'event_category': 'exam',
                     'start_datetime': start_gr,
                     'stop_datetime': stop_gr,
                     'location': 'Văn phòng Khoa / Khảo thí',
-                    'lecturer_id': cc.lecturer_id.id if cc.lecturer_id else False,
+                    'lecturer_id': cc.head_lecturer_id.id if cc.head_lecturer_id else False,
                     'course_id': cc.course_id.id if cc.course_id else False,
                     'student_class_id': cc.class_id.id if cc.class_id else False,
                     'notes': f"Hạn cuối bàn giao bài thi và bảng điểm tổng hợp về Giáo vụ Khoa.",
@@ -868,9 +870,38 @@ class FacultyCalendarEvent(models.Model):
                 exist_gr = self.search([('event_key', '=', key_grading)], limit=1)
                 if exist_gr:
                     exist_gr.write(vals_gr)
+                    updated_count += 1
                 else:
                     vals_gr['event_key'] = key_grading
                     self.create(vals_gr)
+                    created_count += 1
+
+            # Sự kiện 3: Báo cáo viên thực tế (nếu có trên class.course)
+            if cc.has_guest_speaker and cc.guest_lecture_date:
+                key_spk = f"guest_speaker_cc_{cc.id}"
+                start_spk = datetime.combine(cc.guest_lecture_date, time(8, 0))
+                stop_spk = datetime.combine(cc.guest_lecture_date, time(11, 30))
+                vals_spk = {
+                    'name': f"[Báo cáo viên] {cc.guest_speaker_info or 'Chuyên gia thực tế'} - HP {cc.course_id.name if cc.course_id else ''} ({cc.class_id.name if cc.class_id else ''})",
+                    'event_category': 'guest_speaker',
+                    'start_datetime': start_spk,
+                    'stop_datetime': stop_spk,
+                    'location': cc.classroom or (cc.class_id.classroom if cc.class_id else False) or 'Giảng đường Khoa',
+                    'lecturer_id': cc.head_lecturer_id.id if cc.head_lecturer_id else False,
+                    'course_id': cc.course_id.id if cc.course_id else False,
+                    'student_class_id': cc.class_id.id if cc.class_id else False,
+                    'notes': f"Báo cáo viên thực tế: {cc.guest_speaker_info or ''}. Giảng viên quản lý: {cc.head_lecturer_id.name if cc.head_lecturer_id else ''}.",
+                    'res_model': 'faculty.class.course',
+                    'res_id': cc.id,
+                }
+                exist_spk = self.search([('event_key', '=', key_spk)], limit=1)
+                if exist_spk:
+                    exist_spk.write(vals_spk)
+                    updated_count += 1
+                else:
+                    vals_spk['event_key'] = key_spk
+                    self.create(vals_spk)
+                    created_count += 1
 
         # -------------------------------------------------------------
         # 4. Nhóm Sự kiện Khoa & Hạn chót công việc (faculty.other.work & NCKH)
@@ -1109,15 +1140,21 @@ class FacultyDashboard(models.TransientModel):
         # 2.3. Cảnh báo từ Checklist 7 bước học vụ (faculty.academic.checklist)
         chk_domain = [('is_done', '=', False), ('deadline', '!=', False)]
         if not is_mgr and lec:
-            chk_domain.extend(['|', ('class_course_id.lecturer_id', '=', lec.id), ('class_course_id.class_id.teacher_ids', 'in', [lec.id])])
+            chk_domain.extend(['|', '|',
+                ('responsible_lecturer_id', '=', lec.id),
+                ('class_course_id.head_lecturer_id', '=', lec.id),
+                ('class_course_id.lecturer_ids', 'in', [lec.id])
+            ])
         checklists = self.env['faculty.academic.checklist'].search(chk_domain)
         for c in checklists:
-            c_name = f"[Checklist] Bước {c.step_number}: {c.name} ({c.class_course_id.course_id.name})"
+            c_course_name = c.class_course_id.course_id.name if (c.class_course_id and c.class_course_id.course_id) else 'Học phần'
+            c_name = f"[Checklist] Bước {c.step_number}: {c.name} ({c_course_name})"
+            c_lec_id = c.responsible_lecturer_id.id or (c.class_course_id.head_lecturer_id.id if c.class_course_id.head_lecturer_id else False)
             if c.deadline < today:
                 alerts.append((0, 0, {
                     'name': c_name,
                     'source_type': 'checklist',
-                    'lecturer_id': c.class_course_id.lecturer_id.id if c.class_course_id.lecturer_id else False,
+                    'lecturer_id': c_lec_id,
                     'deadline': c.deadline,
                     'alert_type': 'overdue',
                     'color_hex': '#800080',
@@ -1128,7 +1165,7 @@ class FacultyDashboard(models.TransientModel):
                 alerts.append((0, 0, {
                     'name': c_name,
                     'source_type': 'checklist',
-                    'lecturer_id': c.class_course_id.lecturer_id.id if c.class_course_id.lecturer_id else False,
+                    'lecturer_id': c_lec_id,
                     'deadline': c.deadline,
                     'alert_type': 'urgent',
                     'color_hex': '#dc3545',
@@ -1203,7 +1240,7 @@ class FacultyDashboard(models.TransientModel):
         # 5. BẢNG THEO DÕI THỪA / THIẾU GIỜ CHUẨN REAL-TIME (_read_group)
         # -------------------------------------------------------------
         self.hour_ids.unlink()
-        ledger_domain = [('date', '<=', today)]
+        ledger_domain = [('date', '<=', today), ('state', '=', 'posted')]
         if self.academic_year_id:
             ledger_domain.append(('academic_year_id', '=', self.academic_year_id.id))
 
@@ -1231,12 +1268,13 @@ class FacultyDashboard(models.TransientModel):
 
             t_norm = l.teaching_norm_reduced or 0.0
             r_norm = l.research_norm_reduced or 0.0
-            o_norm = l.other_norm_reduced or 0.0
+            o_norm = l.other_norm_reduced or l.other_norm_base or 0.0
 
             t_bal = round(t_act - t_norm, 2)
             r_bal = round(r_act - r_norm, 2)
             o_bal = round(o_act - o_norm, 2)
-            tot_bal = round(t_bal + r_bal + o_bal, 2)
+            # Hoạt động khác là mục độc lập, không miễn giảm và không tham gia bù trừ chéo
+            tot_bal = round(t_bal + r_bal, 2)
 
             total_hours_sum += (t_act + r_act + o_act)
 
@@ -1246,6 +1284,8 @@ class FacultyDashboard(models.TransientModel):
                 stat = 'deficit'
             else:
                 stat = 'balanced'
+
+            o_stat = 'pass' if o_act >= o_norm else 'fail'
 
             hour_lines.append((0, 0, {
                 'lecturer_id': l.id,
@@ -1259,6 +1299,7 @@ class FacultyDashboard(models.TransientModel):
                 'other_norm_reduced': o_norm,
                 'other_actual': o_act,
                 'other_balance': o_bal,
+                'other_status': o_stat,
                 'total_balance': tot_bal,
                 'status': stat,
             }))
@@ -1351,21 +1392,44 @@ class FacultyDashboardHour(models.TransientModel):
 
     teaching_norm_reduced = fields.Float(string='Định mức Giảng dạy')
     teaching_actual = fields.Float(string='Thực tế Giảng dạy')
-    teaching_balance = fields.Float(string='Thừa/Thiếu GD')
+    teaching_balance = fields.Float(string='Thừa/Thiếu GD', compute='_compute_balances', store=True, readonly=False)
 
     research_norm_reduced = fields.Float(string='Định mức NCKH')
     research_actual = fields.Float(string='Thực tế NCKH')
-    research_balance = fields.Float(string='Thừa/Thiếu NCKH')
+    research_balance = fields.Float(string='Thừa/Thiếu NCKH', compute='_compute_balances', store=True, readonly=False)
 
     other_norm_reduced = fields.Float(string='Định mức HĐ khác')
     other_actual = fields.Float(string='Thực tế HĐ khác')
-    other_balance = fields.Float(string='Thừa/Thiếu HĐ khác')
+    other_balance = fields.Float(string='Thừa/Thiếu HĐ khác', compute='_compute_balances', store=True, readonly=False)
+    other_status = fields.Selection([
+        ('pass', 'Đạt HĐ khác'),
+        ('fail', 'Chưa đạt HĐ khác'),
+    ], string='Kết quả HĐ khác', compute='_compute_balances', store=True, readonly=False)
 
-    total_balance = fields.Float(string='Tổng Thừa / Thiếu')
+    total_balance = fields.Float(string='Tổng Thừa / Thiếu (GD + NCKH)', compute='_compute_balances', store=True, readonly=False)
     status = fields.Selection([
         ('surplus', 'Thừa giờ (+ )'),
         ('deficit', 'Thiếu giờ (- )'),
         ('balanced', 'Đạt chuẩn (0)'),
-    ], string='Đánh giá sơ bộ')
+    ], string='Đánh giá sơ bộ', compute='_compute_balances', store=True, readonly=False)
+
+    @api.depends('teaching_actual', 'teaching_norm_reduced', 'research_actual', 'research_norm_reduced', 'other_actual', 'other_norm_reduced')
+    def _compute_balances(self):
+        for rec in self:
+            t_bal = round((rec.teaching_actual or 0.0) - (rec.teaching_norm_reduced or 0.0), 2)
+            r_bal = round((rec.research_actual or 0.0) - (rec.research_norm_reduced or 0.0), 2)
+            o_bal = round((rec.other_actual or 0.0) - (rec.other_norm_reduced or 0.0), 2)
+            rec.teaching_balance = t_bal
+            rec.research_balance = r_bal
+            rec.other_balance = o_bal
+            rec.other_status = 'pass' if (rec.other_actual or 0.0) >= (rec.other_norm_reduced or 0.0) else 'fail'
+            tot_bal = round(t_bal + r_bal, 2)
+            rec.total_balance = tot_bal
+            if tot_bal > 0:
+                rec.status = 'surplus'
+            elif tot_bal < 0:
+                rec.status = 'deficit'
+            else:
+                rec.status = 'balanced'
 
 

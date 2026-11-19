@@ -113,4 +113,277 @@
               parent="faculty_work_mgmt.menu_faculty_hour_ledger_root"
               action="action_faculty_hour_ledger"
               sequence="10"/>
+
+    <!-- ===================================================================== -->
+    <!-- TỜ KHAI CÔNG VIỆC THỦ CÔNG (FACULTY.MANUAL.DECLARATION) -->
+    <!-- ===================================================================== -->
+    <record id="view_faculty_manual_declaration_search" model="ir.ui.view">
+        <field name="name">faculty.manual.declaration.search</field>
+        <field name="model">faculty.manual.declaration</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm Tờ khai">
+                <field name="name" string="Tên tờ khai"/>
+                <field name="code" string="Mã tờ khai"/>
+                <field name="lecturer_id" string="Giảng viên"/>
+                <field name="academic_year_id" string="Năm học"/>
+                <filter string="Dự thảo" name="filter_draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Chờ duyệt" name="filter_to_approve" domain="[('state', '=', 'to_approve')]"/>
+                <filter string="Đã duyệt" name="filter_approved" domain="[('state', '=', 'approved')]"/>
+                <separator/>
+                <group>
+                    <filter string="Giảng viên" name="group_lecturer" context="{'group_by': 'lecturer_id'}"/>
+                    <filter string="Trạng thái" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Năm học" name="group_academic_year" context="{'group_by': 'academic_year_id'}"/>
+                    <filter string="Nhóm tiêu chí" name="group_category" context="{'group_by': 'category'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_faculty_manual_declaration_list" model="ir.ui.view">
+        <field name="name">faculty.manual.declaration.list</field>
+        <field name="model">faculty.manual.declaration</field>
+        <field name="arch" type="xml">
+            <list string="Tờ khai Công việc Giảng viên" decoration-info="state == 'draft'" decoration-warning="state == 'to_approve'" decoration-success="state == 'approved'" decoration-muted="state == 'cancelled'">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="lecturer_id"/>
+                <field name="academic_year_id"/>
+                <field name="date"/>
+                <field name="category"/>
+                <field name="activity_type"/>
+                <field name="standard_hours" sum="Tổng Giờ chuẩn"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-warning="state == 'to_approve'"
+                       decoration-success="state == 'approved'"
+                       decoration-muted="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_faculty_manual_declaration_form" model="ir.ui.view">
+        <field name="name">faculty.manual.declaration.form</field>
+        <field name="model">faculty.manual.declaration</field>
+        <field name="arch" type="xml">
+            <form string="Tờ khai Công việc Giảng viên">
+                <header>
+                    <button name="action_submit" string="Gửi duyệt" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Phê duyệt &amp; Ghi Sổ cái" type="object" class="btn-success" invisible="state != 'to_approve'" groups="faculty_work_mgmt.group_faculty_dean"/>
+                    <button name="action_cancel" string="Hủy / Sinh bút toán đảo" type="object" class="btn-danger" invisible="state not in ('to_approve', 'approved')" confirm="Bạn có chắc chắn muốn hủy tờ khai này? Nếu đã duyệt, hệ thống sẽ sinh bút toán đảo trong Sổ cái."/>
+                    <button name="action_draft" string="Chuyển về Dự thảo" type="object" invisible="state != 'to_approve'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,to_approve,approved"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="code" readonly="1"/>
+                        </h1>
+                        <label for="name" class="oe_edit_only" string="Tên nhiệm vụ / Nội dung kê khai"/>
+                        <h2>
+                            <field name="name" placeholder="VD: Khảo thí học phần X, Hướng dẫn khóa luận..." readonly="state == 'approved'"/>
+                        </h2>
+                    </div>
+                    <group>
+                        <group string="Đối tượng &amp; Thời gian">
+                            <field name="lecturer_id" readonly="state == 'approved'"/>
+                            <field name="academic_year_id" readonly="state == 'approved'"/>
+                            <field name="semester_id" readonly="state == 'approved'"/>
+                            <field name="date" readonly="state == 'approved'"/>
+                        </group>
+                        <group string="Phân loại &amp; Quy đổi">
+                            <field name="category" readonly="state == 'approved'"/>
+                            <field name="teaching_branch" invisible="category != 'teaching'" readonly="state == 'approved'"/>
+                            <field name="is_direct_teaching" invisible="category != 'teaching'" readonly="state == 'approved'"/>
+                            <field name="activity_type" readonly="state == 'approved'"/>
+                            <field name="raw_hours" readonly="state == 'approved'"/>
+                            <field name="coefficient" readonly="state == 'approved'"/>
+                            <field name="standard_hours" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Minh chứng &amp; Giải trình">
+                        <field name="proof_filename" invisible="1"/>
+                        <field name="proof_file" filename="proof_filename" readonly="state == 'approved'"/>
+                        <field name="notes" placeholder="Ghi chú giải trình thêm..." readonly="state == 'approved'"/>
+                    </group>
+                    <group string="Truy vết Sổ cái" invisible="not ledger_id">
+                        <field name="ledger_id" readonly="1"/>
+                        <field name="reversal_ledger_id" readonly="1" invisible="not reversal_ledger_id"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_faculty_manual_declaration" model="ir.actions.act_window">
+        <field name="name">Tờ khai Công việc Giảng viên</field>
+        <field name="res_model">faculty.manual.declaration</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_group_academic_year': 1}</field>
+    </record>
+
+    <menuitem id="menu_faculty_manual_declaration_item"
+              name="Tờ khai Công việc"
+              parent="faculty_work_mgmt.menu_faculty_hour_ledger_root"
+              action="action_faculty_manual_declaration"
+              sequence="15"/>
+
+    <!-- ===================================================================== -->
+    <!-- BẢNG CÂN ĐỐI & BÙ TRỪ GIỜ CHUẨN (FACULTY.WORKLOAD.BALANCE) -->
+    <!-- ===================================================================== -->
+    <record id="view_faculty_workload_balance_search" model="ir.ui.view">
+        <field name="name">faculty.workload.balance.search</field>
+        <field name="model">faculty.workload.balance</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm Bảng cân đối">
+                <field name="lecturer_id" string="Giảng viên"/>
+                <field name="academic_year_id" string="Năm học"/>
+                <filter string="Hoàn thành nhiệm vụ" name="filter_completed" domain="[('result_status', '=', 'completed')]"/>
+                <filter string="Chưa đạt Giảng dạy" name="filter_fail_teaching" domain="[('result_status', '=', 'fail_teaching')]"/>
+                <filter string="Chưa đạt NCKH" name="filter_fail_research" domain="[('result_status', '=', 'fail_research')]"/>
+                <filter string="Chưa đạt cả hai" name="filter_fail_both" domain="[('result_status', '=', 'fail_both')]"/>
+                <separator/>
+                <group>
+                    <filter string="Năm học" name="group_academic_year" context="{'group_by': 'academic_year_id'}"/>
+                    <filter string="Giảng viên" name="group_lecturer" context="{'group_by': 'lecturer_id'}"/>
+                    <filter string="Kết luận hoàn thành" name="group_result_status" context="{'group_by': 'result_status'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_faculty_workload_balance_list" model="ir.ui.view">
+        <field name="name">faculty.workload.balance.list</field>
+        <field name="model">faculty.workload.balance</field>
+        <field name="arch" type="xml">
+            <list string="Bảng Cân đối &amp; Bù trừ Giờ chuẩn" decoration-success="result_status == 'completed'" decoration-danger="result_status in ('fail_teaching', 'fail_research', 'fail_both')">
+                <field name="academic_year_id"/>
+                <field name="lecturer_id"/>
+                <field name="net_teaching_quota" string="ĐM Giảng (A)"/>
+                <field name="actual_classroom_hours" string="Lên lớp (b)"/>
+                <field name="total_teaching_hours" string="Tổng GD (a)"/>
+                <field name="final_teaching_hours" string="GD sau bù (a_sau)"/>
+                <field name="net_research_quota" string="ĐM NCKH (C)"/>
+                <field name="actual_research_hours" string="NCKH (c)"/>
+                <field name="final_research_hours" string="NCKH sau bù (c_sau)"/>
+                <field name="n_overtime_classroom" string="Giờ thừa (n)"/>
+                <field name="result_status" widget="badge"
+                       decoration-success="result_status == 'completed'"
+                       decoration-warning="result_status in ('fail_teaching', 'fail_research')"
+                       decoration-danger="result_status == 'fail_both'"/>
+                <field name="overtime_payment_amount" sum="Tổng tiền vượt giờ (VNĐ)"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_faculty_workload_balance_form" model="ir.ui.view">
+        <field name="name">faculty.workload.balance.form</field>
+        <field name="model">faculty.workload.balance</field>
+        <field name="arch" type="xml">
+            <form string="Bảng Cân đối &amp; Bù trừ Giờ chuẩn">
+                <header>
+                    <button name="action_recompute_balance" string="Tính lại Bảng cân đối" type="object" class="btn-primary" icon="fa-refresh"/>
+                    <field name="result_status" widget="statusbar" statusbar_visible="completed,fail_teaching,fail_research,fail_both"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="lecturer_id" class="oe_edit_only" string="Giảng viên"/>
+                        <h1>
+                            <field name="lecturer_id"/>
+                        </h1>
+                        <h3>
+                            <field name="academic_year_id"/>
+                        </h3>
+                    </div>
+                    <notebook>
+                        <page string="1. Trụ cột Giảng dạy (A, B, b, a)" name="teaching_tab">
+                            <group>
+                                <group string="Định mức Giảng dạy">
+                                    <field name="net_teaching_quota" readonly="1"/>
+                                    <field name="min_classroom_quota" readonly="1"/>
+                                </group>
+                                <group string="Giờ thực tế Đạt được">
+                                    <field name="actual_classroom_hours" readonly="1"/>
+                                    <field name="other_teaching_hours" readonly="1"/>
+                                    <field name="total_teaching_hours" readonly="1"/>
+                                </group>
+                            </group>
+                            <group string="Chênh lệch Giảng dạy">
+                                <group>
+                                    <field name="m_excess_teaching" readonly="1"/>
+                                    <field name="n_overtime_classroom" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="final_teaching_hours" readonly="1"/>
+                                    <field name="is_teaching_passed" widget="boolean_toggle" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="2. Trụ cột NCKH (C, c, o)" name="research_tab">
+                            <group>
+                                <group string="Định mức NCKH">
+                                    <field name="net_research_quota" readonly="1"/>
+                                </group>
+                                <group string="NCKH Thực tế">
+                                    <field name="actual_research_hours" readonly="1"/>
+                                    <field name="o_excess_research" readonly="1"/>
+                                </group>
+                            </group>
+                            <group string="Kết quả NCKH sau bù trừ">
+                                <group>
+                                    <field name="teaching_to_research_floor_met" widget="boolean_toggle" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="final_research_hours" readonly="1"/>
+                                    <field name="is_research_passed" widget="boolean_toggle" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="3. Bù trừ Chéo &amp; Thành tiền Vượt giờ" name="offset_payment_tab">
+                            <group>
+                                <group string="Giờ trích bù trừ">
+                                    <field name="teaching_offset" readonly="1"/>
+                                    <field name="research_offset" readonly="1"/>
+                                </group>
+                                <group string="Thanh toán Vượt giờ">
+                                    <field name="is_completed" widget="boolean_toggle" readonly="1"/>
+                                    <field name="overtime_teaching_rate" readonly="1"/>
+                                    <field name="overtime_payment_amount" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="4. Hoạt động khác (Độc lập)" name="other_tab">
+                            <group>
+                                <group string="Định mức &amp; Thực tế">
+                                    <field name="other_norm" readonly="1"/>
+                                    <field name="other_actual" readonly="1"/>
+                                </group>
+                                <group string="Cân đối Hoạt động khác">
+                                    <field name="other_balance" readonly="1"/>
+                                    <field name="other_status" widget="badge" readonly="1"
+                                           decoration-success="other_status == 'pass'"
+                                           decoration-danger="other_status == 'fail'"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_faculty_workload_balance" model="ir.actions.act_window">
+        <field name="name">Bảng Cân đối &amp; Bù trừ Giờ chuẩn</field>
+        <field name="res_model">faculty.workload.balance</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_group_academic_year': 1}</field>
+    </record>
+
+    <menuitem id="menu_faculty_workload_balance_item"
+              name="Bảng Cân đối Giờ chuẩn"
+              parent="faculty_work_mgmt.menu_faculty_hour_ledger_root"
+              action="action_faculty_workload_balance"
+              sequence="20"/>
 </odoo>

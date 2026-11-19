@@ -8,18 +8,27 @@
             <search string="Tìm kiếm Giảng viên">
                 <field name="name" string="Họ và tên"/>
                 <field name="lecturer_code" string="Mã giảng viên"/>
+                <field name="admin_position" string="Chức vụ"/>
+                <field name="academic_rank" string="Chức danh"/>
+                <field name="degree" string="Học vị"/>
+                <field name="academic_title" string="Học hàm"/>
                 <field name="rank_id" string="Bậc lương"/>
-                <field name="position_title" string="Chức vụ"/>
 
+                <separator/>
+                <filter string="Lãnh đạo Khoa" name="filter_leadership" domain="[('admin_position', 'in', ['truong_khoa', 'pho_khoa'])]"/>
+                <filter string="Giảng viên cơ hữu" name="filter_permanent" domain="[('is_visiting', '=', False)]"/>
+                <filter string="Giảng viên thỉnh giảng" name="filter_visiting" domain="[('is_visiting', '=', True)]"/>
                 <filter string="Sắp đến hạn nâng bậc (&lt;= 60 ngày)" name="filter_promotion_soon" domain="[('is_promotion_soon', '=', True)]"/>
                 <filter string="Giáo sư / Phó Giáo sư" name="filter_professors" domain="[('academic_title', 'in', ['prof', 'assoc_prof'])]"/>
-                <filter string="Tiến sĩ / TSKH" name="filter_doctors" domain="[('academic_degree', 'in', ['doctor', 'doctor_science'])]"/>
+                <filter string="Tiến sĩ" name="filter_doctors" domain="[('degree', '=', 'doctor')]"/>
 
                 <group>
-                    <filter string="Chức vụ / Vị trí" name="group_position" context="{'group_by': 'position_title'}"/>
+                    <filter string="Chức danh" name="group_academic_rank" context="{'group_by': 'academic_rank'}"/>
+                    <filter string="Chức vụ" name="group_admin_position" context="{'group_by': 'admin_position'}"/>
+                    <filter string="Học vị" name="group_degree" context="{'group_by': 'degree'}"/>
+                    <filter string="Học hàm" name="group_academic_title" context="{'group_by': 'academic_title'}"/>
+                    <filter string="Thỉnh giảng" name="group_is_visiting" context="{'group_by': 'is_visiting'}"/>
                     <filter string="Bậc lương" name="group_rank" context="{'group_by': 'rank_id'}"/>
-                    <filter string="Học vị" name="group_degree" context="{'group_by': 'academic_degree'}"/>
-                    <filter string="Học hàm" name="group_title" context="{'group_by': 'academic_title'}"/>
                 </group>
             </search>
         </field>
@@ -33,15 +42,22 @@
             <list string="Danh sách Giảng viên" decoration-warning="is_promotion_soon">
                 <field name="lecturer_code"/>
                 <field name="name"/>
+                <field name="is_visiting" widget="boolean" optional="show"/>
+                <field name="admin_position"/>
+                <field name="academic_rank"/>
+                <field name="degree"/>
                 <field name="academic_title"/>
-                <field name="academic_degree"/>
-                <field name="position_title"/>
-                <field name="rank_id"/>
-                <field name="days_to_promotion" string="Ngày đến hạn nâng bậc"/>
+                <field name="rank_id" optional="show"/>
+                <field name="teaching_norm_base" string="ĐM GD gốc" optional="show"/>
+                <field name="teaching_norm_reduced" string="Phải nộp (A)" optional="show"/>
+                <field name="research_norm_base" string="ĐM NCKH gốc" optional="hide"/>
+                <field name="research_norm_reduced" string="Phải nộp (C)" optional="hide"/>
+                <field name="other_norm_reduced" string="ĐM HĐ khác" optional="hide"/>
                 <field name="teaching_actual_lecture" string="Giờ đứng lớp"/>
                 <field name="teaching_actual_total" string="Tổng giờ GD"/>
                 <field name="research_actual_total" string="Giờ NCKH"/>
                 <field name="other_actual_total" string="Giờ HĐ khác"/>
+                <field name="days_to_promotion" string="Ngày đến hạn nâng bậc" optional="hide"/>
             </list>
         </field>
     </record>
@@ -80,13 +96,15 @@
                     </div>
 
                     <group>
-                        <group string="Thông tin Chức danh &amp; Bậc lương">
+                        <group string="Chức vụ, Chức danh &amp; Học vị">
                             <field name="lecturer_code"/>
-                            <field name="position_title"/>
-                            <field name="academic_title"/>
-                            <field name="title_appointment_year" invisible="academic_title == 'none'"/>
-                            <field name="academic_degree"/>
+                            <field name="is_visiting" widget="boolean_toggle"/>
+                            <field name="admin_position"/>
+                            <field name="academic_rank"/>
+                            <field name="degree"/>
                             <field name="degree_recognition_year"/>
+                            <field name="academic_title"/>
+                            <field name="title_appointment_year" invisible="academic_title in ('none', False)"/>
                         </group>
                         <group string="Tiến độ Nâng bậc lương">
                             <field name="rank_id"/>
@@ -141,10 +159,9 @@
                                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-2">
                                     <h5 class="mb-0"><i class="fa fa-graduation-cap me-2"/>1. TIÊU CHÍ GIẢNG DẠY</h5>
                                     <div>
-                                        <span class="badge bg-light text-primary me-2">Định mức sau giảm: <field name="teaching_norm_reduced" readonly="1" class="oe_inline"/> tiết</span>
-                                        <span class="badge bg-light text-primary me-2">Giờ giảng ĐM (50%): <field name="teaching_norm_lecture_50" readonly="1" class="oe_inline"/> tiết</span>
-                                        <span class="badge bg-warning text-dark me-2">Giờ đứng lớp TT: <field name="teaching_actual_lecture" readonly="1" class="oe_inline"/> tiết</span>
-                                        <span class="badge bg-success me-2">Tổng giờ thực tế: <field name="teaching_actual_total" readonly="1" class="oe_inline"/> giờ</span>
+                                        <span class="badge bg-warning text-dark me-2">Lên lớp TT (b): <field name="teaching_actual_lecture" readonly="1" class="oe_inline"/> tiết</span>
+                                        <span class="badge bg-info text-dark me-2">GD khác: <field name="other_teaching_hours" readonly="1" class="oe_inline"/> giờ</span>
+                                        <span class="badge bg-success me-2">Tổng đạt được (a = b + khác): <field name="teaching_actual_total" readonly="1" class="oe_inline"/> giờ</span>
                                         <span class="badge bg-secondary">Thừa/Thiếu: <field name="teaching_balance" readonly="1" class="oe_inline"/> giờ</span>
                                     </div>
                                 </div>
@@ -152,6 +169,7 @@
                                     <field name="teaching_ledger_ids" readonly="1">
                                         <list string="Chi tiết Nhiệm vụ Giảng dạy đã quy đổi" limit="10">
                                             <field name="date" string="Ngày"/>
+                                            <field name="teaching_branch" widget="badge" decoration-primary="teaching_branch == 'direct'" decoration-info="teaching_branch == 'converted'"/>
                                             <field name="activity_type" string="Loại nhiệm vụ"/>
                                             <field name="name" string="Chi tiết hoạt động"/>
                                             <field name="raw_hours" string="Số tiết/buổi gốc"/>
@@ -170,8 +188,7 @@
                                 <div class="card-header bg-success text-white d-flex justify-content-between align-items-center py-2">
                                     <h5 class="mb-0"><i class="fa fa-flask me-2"/>2. TIÊU CHÍ NGHIÊN CỨU KHOA HỌC</h5>
                                     <div>
-                                        <span class="badge bg-light text-success me-2">Định mức sau giảm: <field name="research_norm_reduced" readonly="1" class="oe_inline"/> giờ</span>
-                                        <span class="badge bg-light text-dark me-2">Tổng giờ thực tế: <field name="research_actual_total" readonly="1" class="oe_inline"/> giờ</span>
+                                        <span class="badge bg-light text-dark me-2">Tổng đạt được (c): <field name="research_actual_total" readonly="1" class="oe_inline"/> giờ</span>
                                         <span class="badge bg-secondary">Thừa/Thiếu: <field name="research_balance" readonly="1" class="oe_inline"/> giờ</span>
                                     </div>
                                 </div>
@@ -195,7 +212,6 @@
                                 <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center py-2">
                                     <h5 class="mb-0"><i class="fa fa-users me-2"/>3. TIÊU CHÍ HOẠT ĐỘNG KHÁC</h5>
                                     <div>
-                                        <span class="badge bg-dark text-white me-2">Định mức sau giảm: <field name="other_norm_reduced" readonly="1" class="oe_inline"/> giờ</span>
                                         <span class="badge bg-light text-dark me-2">Tổng giờ thực tế: <field name="other_actual_total" readonly="1" class="oe_inline"/> giờ</span>
                                         <span class="badge bg-secondary">Thừa/Thiếu: <field name="other_balance" readonly="1" class="oe_inline"/> giờ</span>
                                     </div>
@@ -301,16 +317,68 @@
                             </group>
                         </page>
 
-                        <!-- TAB 3: THIẾT LẬP, MIỄN GIẢM & CHỮ KÝ SỐ -->
-                        <page string="Thiết lập &amp; Miễn giảm" name="settings_reductions">
-                            <group>
-                                <group string="Định mức chức danh &amp; Miễn giảm">
-                                    <field name="title_norm_id"/>
-                                    <field name="study_weeks"/>
-                                    <field name="reduction_ids" widget="many2many_tags"/>
+                        <!-- TAB 3: ĐỊNH MỨC & MIỄN GIẢM (KHU VỰC DUY NHẤT TRÊN HỒ SƠ) -->
+                        <page string="Định mức &amp; Miễn giảm" name="tab_norm_reduction">
+                            <div class="alert alert-info py-2 mb-3" role="alert">
+                                <i class="fa fa-info-circle me-1"/>
+                                <strong>Khung Định mức &amp; Miễn giảm chuẩn:</strong> Số giờ Định mức gốc tự động áp dụng Readonly từ Bảng cấu hình chức danh toàn khoa. Các trường hợp miễn giảm được khai báo chi tiết bên dưới, từ đó tự động tính ra Định mức thực tế sau miễn giảm.
+                            </div>
+
+                            <!-- Khối 1: Định mức gốc (tự động nhảy Readonly từ bảng cấu hình chức danh) -->
+                            <group string="1. Định mức gốc theo Chức danh (Áp dụng từ Cấu hình Khoa)">
+                                <group>
+                                    <field name="title_norm_id" readonly="1" force_save="1" options="{'no_open': False}"/>
+                                    <field name="study_weeks" string="Số tuần cử đi học/bồi dưỡng (>= 4 tuần)"/>
                                 </group>
-                                <group string="Tài khoản &amp; Chữ ký số">
+                                <group>
+                                    <field name="teaching_norm_base" readonly="1" string="Định mức gốc Giảng dạy (tiết)"/>
+                                    <field name="research_norm_base" readonly="1" string="Định mức gốc NCKH (giờ)"/>
+                                    <field name="other_norm_base" readonly="1" string="Định mức gốc Hoạt động khác (giờ)"/>
+                                </group>
+                            </group>
+
+                            <!-- Khối 2: Bảng One2many liên kết tới các dòng Miễn giảm của giảng viên -->
+                            <group string="2. Bảng kê Chi tiết Miễn giảm Định mức của Giảng viên (theo Năm học)">
+                                <field name="reduction_ids" nolabel="1">
+                                    <list editable="bottom">
+                                        <field name="academic_year_id" options="{'no_create': True}"/>
+                                        <field name="reason_preset" optional="show"/>
+                                        <field name="name" string="Lý do miễn giảm"/>
+                                        <field name="scope" widget="badge" decoration-info="scope == 'teaching'" decoration-success="scope == 'research'" decoration-primary="scope == 'both'"/>
+                                        <field name="percentage" string="Tỷ lệ giảm (%)"/>
+                                        <field name="teaching_hours_reduced" string="Giờ GD giảm"/>
+                                        <field name="research_hours_reduced" string="Giờ NCKH giảm"/>
+                                        <field name="proof_filename" invisible="1"/>
+                                        <field name="proof_file" filename="proof_filename" widget="binary" string="Minh chứng"/>
+                                        <field name="notes" optional="hide"/>
+                                    </list>
+                                </field>
+                            </group>
+
+                            <!-- Khối 3: Số giờ Định mức thực tế sau miễn giảm -->
+                            <group string="3. Số giờ Định mức thực tế sau miễn giảm (Chỉ tiêu hoàn thành nhiệm vụ)">
+                                <group string="Giảng dạy &amp; Đào tạo">
+                                    <field name="teaching_reduction_pct" readonly="1" string="Tổng % giảm Giảng dạy"/>
+                                    <field name="teaching_hours_reduced" readonly="1" string="Tổng giờ GD được miễn giảm"/>
+                                    <field name="teaching_norm_reduced" readonly="1" string="ĐM Giảng dạy thực tế phải nộp (A)"/>
+                                    <field name="teaching_norm_lecture_50" readonly="1" string="ĐM Lên lớp tối thiểu (B = 0.5*A)"/>
+                                </group>
+                                <group string="Nghiên cứu khoa học &amp; Hoạt động khác">
+                                    <field name="research_reduction_pct" readonly="1" string="Tổng % giảm NCKH"/>
+                                    <field name="research_hours_reduced" readonly="1" string="Tổng giờ NCKH được miễn giảm"/>
+                                    <field name="research_norm_reduced" readonly="1" string="ĐM NCKH thực tế phải nộp (C)"/>
+                                    <field name="other_norm_reduced" readonly="1" string="ĐM Hoạt động khác (Không miễn giảm)"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- TAB 4: TÀI KHOẢN & CHỮ KÝ SỐ -->
+                        <page string="Tài khoản &amp; Chữ ký số" name="tab_account_signature">
+                            <group>
+                                <group string="Tài khoản Người dùng Odoo">
                                     <field name="user_id"/>
+                                </group>
+                                <group string="Chữ ký điện tử / Chữ ký số">
                                     <field name="signature_image" widget="image" class="oe_avatar" string="Ảnh chữ ký số"/>
                                 </group>
                             </group>
@@ -327,7 +395,7 @@
         <field name="name">Hồ sơ Giảng viên</field>
         <field name="res_model">faculty.lecturer</field>
         <field name="view_mode">list,form</field>
-        <field name="context">{'search_default_group_position': 1}</field>
+        <field name="context">{'search_default_group_academic_rank': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Tạo hồ sơ giảng viên mới để quản lý công tác đào tạo, NCKH và lý lịch khoa học.
@@ -335,10 +403,12 @@
         </field>
     </record>
 
-    <!-- Menuitem -->
+    <!-- Menuitem Hồ sơ Giảng viên -->
     <menuitem id="menu_faculty_lecturer_item"
               name="Hồ sơ Giảng viên"
               parent="faculty_work_mgmt.menu_faculty_lecturer_root"
               action="action_faculty_lecturer"
               sequence="10"/>
+
+
 </odoo>

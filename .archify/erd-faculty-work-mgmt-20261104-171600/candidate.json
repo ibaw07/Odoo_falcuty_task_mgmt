@@ -1,0 +1,274 @@
+{
+  "schema_version": 1,
+  "diagram_type": "erd",
+  "meta": {
+    "title": "So do Thuc the Quan he (ERD) - faculty_work_mgmt",
+    "subtitle": "Mo hinh du lieu cac bang nhan su, dinh muc, so cai va can doi bu tru",
+    "output": ".archify/erd-faculty-work-mgmt-20261104-171600/faculty_erd.html",
+    "quality_profile": "standard",
+    "repository": {
+      "url": "https://github.com/ibaw07/Odoo_falcuty_task_mgmt.git",
+      "revision": "69a8412b6cabc23b578718363b2bd50c94adcce5"
+    }
+  },
+  "layout": {
+    "mode": "grid",
+    "gapY": 40,
+    "gapX": 80
+  },
+  "entities": [
+    {
+      "id": "rank_config",
+      "label": "faculty_rank_config",
+      "tag": "nhan_su",
+      "row": 0,
+      "col": 0,
+      "width": 270,
+      "attributes": [
+        { "name": "id", "type": "bigint", "key": "pk" },
+        { "name": "name", "type": "varchar(100)" },
+        { "name": "rank_code", "type": "varchar(32)", "key": "uk" },
+        { "name": "teaching_hours", "type": "numeric(6,2)" },
+        { "name": "research_hours", "type": "numeric(6,2)" },
+        { "name": "other_hours", "type": "numeric(6,2)" }
+      ],
+      "sources": [{ "path": "faculty_work_mgmt/models/faculty_config.py", "line": 1 }]
+    },
+    {
+      "id": "lecturer",
+      "label": "faculty_lecturer",
+      "tag": "nhan_su",
+      "row": 1,
+      "col": 0,
+      "width": 270,
+      "attributes": [
+        { "name": "id", "type": "bigint", "key": "pk" },
+        { "name": "name", "type": "varchar(120)" },
+        { "name": "email", "type": "varchar(120)", "key": "uk" },
+        { "name": "academic_rank", "type": "varchar(32)" },
+        { "name": "admin_position", "type": "varchar(32)" },
+        { "name": "degree", "type": "varchar(32)" },
+        { "name": "academic_title", "type": "varchar(32)" },
+        { "name": "is_visiting", "type": "boolean" }
+      ],
+      "sources": [{ "path": "faculty_work_mgmt/models/faculty_lecturer.py", "line": 1 }]
+    },
+    {
+      "id": "reduction",
+      "label": "faculty_norm_reduction",
+      "tag": "nhan_su",
+      "row": 2,
+      "col": 0,
+      "width": 270,
+      "attributes": [
+        { "name": "id", "type": "bigint", "key": "pk" },
+        { "name": "lecturer_id", "type": "bigint", "key": "fk", "references": "lecturer.id" },
+        { "name": "year_id", "type": "bigint", "key": "fk", "references": "academic_year.id" },
+        { "name": "reduction_rate", "type": "numeric(5,2)" },
+        { "name": "scope", "type": "varchar(32)" },
+        { "name": "reason", "type": "varchar(255)" }
+      ],
+      "sources": [{ "path": "faculty_work_mgmt/models/faculty_config.py", "line": 50 }]
+    },
+    {
+      "id": "course",
+      "label": "faculty_course",
+      "tag": "cong_viec",
+      "row": 0,
+      "col": 1,
+      "width": 270,
+      "attributes": [
+        { "name": "id", "type": "bigint", "key": "pk" },
+        { "name": "code", "type": "varchar(32)", "key": "uk" },
+        { "name": "name", "type": "varchar(200)" },
+        { "name": "credits", "type": "integer" },
+        { "name": "stt", "type": "integer" }
+      ],
+      "sources": [{ "path": "faculty_work_mgmt/models/faculty_teaching.py", "line": 1 }]
+    },
+    {
+      "id": "research_work",
+      "label": "faculty_research_work",
+      "tag": "cong_viec",
+      "row": 1,
+      "col": 1,
+      "width": 270,
+      "attributes": [
+        { "name": "id", "type": "bigint", "key": "pk" },
+        { "name": "name", "type": "varchar(255)" },
+        { "name": "category", "type": "varchar(64)" },
+        { "name": "publication_year", "type": "integer" },
+        { "name": "journal_name", "type": "varchar(255)" },
+        { "name": "total_hours", "type": "numeric(8,2)" }
+      ],
+      "sources": [{ "path": "faculty_work_mgmt/models/faculty_research.py", "line": 1 }]
+    },
+    {
+      "id": "declaration",
+      "label": "faculty_manual_declaration",
+      "tag": "cong_viec",
+      "row": 2,
+      "col": 1,
+      "width": 270,
+      "attributes": [
+        { "name": "id", "type": "bigint", "key": "pk" },
+        { "name": "lecturer_id", "type": "bigint", "key": "fk", "references": "lecturer.id" },
+        { "name": "year_id", "type": "bigint", "key": "fk", "references": "academic_year.id" },
+        { "name": "work_type", "type": "varchar(32)" },
+        { "name": "raw_hours", "type": "numeric(8,2)" },
+        { "name": "state", "type": "varchar(32)" }
+      ],
+      "sources": [{ "path": "faculty_work_mgmt/models/faculty_hour_ledger.py", "line": 60 }]
+    },
+    {
+      "id": "academic_year",
+      "label": "faculty_academic_year",
+      "tag": "so_cai",
+      "row": 0,
+      "col": 2,
+      "width": 290,
+      "attributes": [
+        { "name": "id", "type": "bigint", "key": "pk" },
+        { "name": "name", "type": "varchar(64)", "key": "uk" },
+        { "name": "date_start", "type": "date" },
+        { "name": "date_end", "type": "date" },
+        { "name": "state", "type": "varchar(32)" }
+      ],
+      "sources": [{ "path": "faculty_work_mgmt/models/faculty_config.py", "line": 10 }]
+    },
+    {
+      "id": "workload_ledger",
+      "label": "faculty_workload_ledger",
+      "tag": "so_cai",
+      "row": 1,
+      "col": 2,
+      "width": 290,
+      "attributes": [
+        { "name": "id", "type": "bigint", "key": "pk" },
+        { "name": "lecturer_id", "type": "bigint", "key": "fk", "references": "lecturer.id" },
+        { "name": "year_id", "type": "bigint", "key": "fk", "references": "academic_year.id" },
+        { "name": "work_type", "type": "varchar(32)" },
+        { "name": "converted_hours", "type": "numeric(8,2)" },
+        { "name": "state", "type": "varchar(32)" }
+      ],
+      "sources": [{ "path": "faculty_work_mgmt/models/faculty_hour_ledger.py", "line": 1 }]
+    },
+    {
+      "id": "workload_balance",
+      "label": "faculty_workload_balance",
+      "tag": "so_cai",
+      "row": 2,
+      "col": 2,
+      "width": 290,
+      "attributes": [
+        { "name": "id", "type": "bigint", "key": "pk" },
+        { "name": "lecturer_id", "type": "bigint", "key": "fk", "references": "lecturer.id" },
+        { "name": "year_id", "type": "bigint", "key": "fk", "references": "academic_year.id" },
+        { "name": "net_teaching_quota", "type": "numeric(8,2)" },
+        { "name": "min_classroom_quota", "type": "numeric(8,2)" },
+        { "name": "actual_classroom_hours", "type": "numeric(8,2)" },
+        { "name": "total_teaching_hours", "type": "numeric(8,2)" },
+        { "name": "net_research_quota", "type": "numeric(8,2)" },
+        { "name": "actual_research_hours", "type": "numeric(8,2)" },
+        { "name": "classroom_excess", "type": "numeric(8,2)" },
+        { "name": "total_amount", "type": "numeric(14,2)" }
+      ],
+      "sources": [{ "path": "faculty_work_mgmt/models/faculty_hour_ledger.py", "line": 120 }]
+    }
+  ],
+  "relationships": [
+    {
+      "id": "rel_reduction_lecturer",
+      "from": "reduction",
+      "to": "lecturer",
+      "label": "thuoc giang vien",
+      "fromCardinality": "many",
+      "toCardinality": "one"
+    },
+    {
+      "id": "rel_reduction_year",
+      "from": "reduction",
+      "to": "academic_year",
+      "label": "theo nam hoc",
+      "fromCardinality": "many",
+      "toCardinality": "one"
+    },
+    {
+      "id": "rel_decl_lecturer",
+      "from": "declaration",
+      "to": "lecturer",
+      "label": "ke khai boi",
+      "fromCardinality": "many",
+      "toCardinality": "one"
+    },
+    {
+      "id": "rel_decl_year",
+      "from": "declaration",
+      "to": "academic_year",
+      "label": "ap dung nam",
+      "fromCardinality": "many",
+      "toCardinality": "one"
+    },
+    {
+      "id": "rel_ledger_lecturer",
+      "from": "workload_ledger",
+      "to": "lecturer",
+      "label": "but toan cho",
+      "fromCardinality": "many",
+      "toCardinality": "one"
+    },
+    {
+      "id": "rel_ledger_year",
+      "from": "workload_ledger",
+      "to": "academic_year",
+      "label": "ky nam hoc",
+      "fromCardinality": "many",
+      "toCardinality": "one"
+    },
+    {
+      "id": "rel_balance_lecturer",
+      "from": "workload_balance",
+      "to": "lecturer",
+      "label": "can doi cho",
+      "fromCardinality": "many",
+      "toCardinality": "one"
+    },
+    {
+      "id": "rel_balance_year",
+      "from": "workload_balance",
+      "to": "academic_year",
+      "label": "chot so lieu",
+      "fromCardinality": "many",
+      "toCardinality": "one"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Nhan su & Dinh muc",
+      "items": [
+        "Moi giang vien faculty_lecturer co chuc danh, hoc ham, hoc vi va chuc vu rieng biet",
+        "Bang dinh muc faculty_rank_config quy dinh gio chuan theo chuc danh",
+        "faculty_norm_reduction luu ty le mien giam va ly do theo tung nam hoc"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Mo hinh So cai (Ledger)",
+      "items": [
+        "faculty_workload_ledger la so cai ghi nhan gio chuan sau quy doi",
+        "Trang thai: staging (du thao), posted (da chot khoa), cancelled (da huy)",
+        "Lock giao dich bang SELECT FOR UPDATE SKIP LOCKED khi phe duyet"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Can doi & Bu tru Chéo",
+      "items": [
+        "faculty_workload_balance tong hop so gio A, B, C, a, b, c",
+        "Thuat toan bu tru cheo m sang c hoac o sang a theo ty le quy dinh",
+        "Chi tra vuot gio cho so gio len lop thua n = max(0, b - B)"
+      ]
+    }
+  ]
+}

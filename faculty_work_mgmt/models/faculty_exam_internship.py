@@ -82,6 +82,36 @@ class FacultyExamAssignment(models.Model):
                 rec.unit_rate = 0.0
                 rec.standard_hours = 0.0
 
+    def write(self, vals):
+        old_data = {rec.id: (rec.lecturer_id.id, rec.standard_hours) for rec in self}
+        res = super(FacultyExamAssignment, self).write(vals)
+        for rec in self:
+            old_lec, old_h = old_data.get(rec.id, (False, 0.0))
+            if ('lecturer_id' in vals and rec.lecturer_id.id != old_lec) or ('paper_count' in vals):
+                ledgers = self.env['faculty.hour.ledger'].search([
+                    ('res_model', '=', self._name),
+                    ('res_id', '=', rec.id),
+                ])
+                for l in ledgers:
+                    if l.is_locked:
+                        raise UserError(_('Không thể điều chỉnh phân công khảo thí có bút toán Sổ cái đã chốt: "%s"!') % l.name)
+                ledgers.unlink()
+                if rec.class_course_id.exam_done:
+                    rec.class_course_id.action_finish_exam()
+        return res
+
+    def unlink(self):
+        assign_ids = self.ids
+        ledgers = self.env['faculty.hour.ledger'].search([
+            ('res_model', '=', self._name),
+            ('res_id', 'in', assign_ids),
+        ])
+        for l in ledgers:
+            if l.is_locked:
+                raise UserError(_('Không thể xóa phân công khảo thí có bút toán Sổ cái đã chốt: "%s"!') % l.name)
+        ledgers.unlink()
+        return super(FacultyExamAssignment, self).unlink()
+
 
 class FacultyThesisGuidance(models.Model):
     _name = 'faculty.thesis.guidance'
@@ -123,6 +153,44 @@ class FacultyThesisGuidance(models.Model):
     ], string='Trạng thái', default='draft', tracking=True)
     notes = fields.Text(string='Ghi chú')
 
+    def write(self, vals):
+        old_data = {
+            rec.id: (rec.lecturer_id.id, rec.state, rec.standard_hours)
+            for rec in self
+        }
+        res = super(FacultyThesisGuidance, self).write(vals)
+        for rec in self:
+            old_lec_id, old_state, old_hours = old_data.get(rec.id, (False, False, 0.0))
+            # Nếu đổi giảng viên, hoặc hạ trạng thái khỏi approved:
+            # Xóa bút toán sổ cái cũ tương ứng để tránh bút toán mồ côi
+            if (old_state == 'approved' and rec.state != 'approved') or (old_lec_id and rec.lecturer_id.id != old_lec_id):
+                ledgers = self.env['faculty.hour.ledger'].search([
+                    ('res_model', '=', self._name),
+                    ('res_id', '=', rec.id),
+                ])
+                for l in ledgers:
+                    if l.is_locked:
+                        raise UserError(_('Không thể điều chỉnh đề tài hướng dẫn có bút toán Sổ cái đã chốt sổ: "%s"!') % l.name)
+                ledgers.unlink()
+                if rec.state == 'approved':
+                    rec.action_approve()
+            elif rec.state == 'approved' and ('standard_hours' in vals or 'guidance_level' in vals):
+                rec.action_approve()
+        return res
+
+    def unlink(self):
+        # Khi xóa đề tài hướng dẫn, xóa bút toán Sổ cái tương ứng
+        guidance_ids = self.ids
+        ledgers = self.env['faculty.hour.ledger'].search([
+            ('res_model', '=', self._name),
+            ('res_id', 'in', guidance_ids),
+        ])
+        for l in ledgers:
+            if l.is_locked:
+                raise UserError(_('Không thể xóa đề tài hướng dẫn có bút toán Sổ cái đã chốt sổ: "%s"!') % l.name)
+        ledgers.unlink()
+        return super(FacultyThesisGuidance, self).unlink()
+
     def action_submit(self):
         for rec in self:
             rec.state = 'waiting_dean'
@@ -150,7 +218,16 @@ class FacultyThesisGuidance(models.Model):
 
     def action_reset_draft(self):
         for rec in self:
+            ledgers = self.env['faculty.hour.ledger'].search([
+                ('res_model', '=', self._name),
+                ('res_id', '=', rec.id),
+            ])
+            for l in ledgers:
+                if l.is_locked:
+                    raise UserError(_('Không thể chuyển về Dự thảo khi bút toán Sổ cái đã chốt sổ: "%s"!') % l.name)
+            ledgers.unlink()
             rec.state = 'draft'
+            rec.message_post(body=_("Đã chuyển về trạng thái Dự thảo và hủy bút toán Sổ cái liên kết."))
 
 
 class FacultyInternshipProject(models.Model):
@@ -243,6 +320,38 @@ class FacultyInternshipProject(models.Model):
             })
         return True
 
+    def write(self, vals):
+        old_states = {rec.id: rec.state for rec in self}
+        res = super(FacultyInternshipProject, self).write(vals)
+        for rec in self:
+            old_st = old_states.get(rec.id)
+            if old_st == 'approved' and rec.state != 'approved':
+                part_ids = rec.participant_ids.ids
+                if part_ids:
+                    ledgers = self.env['faculty.hour.ledger'].search([
+                        ('res_model', '=', 'faculty.internship.participant'),
+                        ('res_id', 'in', part_ids),
+                    ])
+                    for l in ledgers:
+                        if l.is_locked:
+                            raise UserError(_('Không thể điều chỉnh đợt thực tập có cán bộ đã chốt Sổ cái: "%s"!') % l.name)
+                    ledgers.unlink()
+        return res
+
+    def unlink(self):
+        # Khi xóa đợt thực tập, tự động xóa bút toán Sổ cái của các cán bộ tham gia
+        all_part_ids = self.participant_ids.ids
+        if all_part_ids:
+            ledgers = self.env['faculty.hour.ledger'].search([
+                ('res_model', '=', 'faculty.internship.participant'),
+                ('res_id', 'in', all_part_ids),
+            ])
+            for l in ledgers:
+                if l.is_locked:
+                    raise UserError(_('Không thể xóa đợt thực tập có cán bộ đã chốt Sổ cái: "%s"!') % l.name)
+            ledgers.unlink()
+        return super(FacultyInternshipProject, self).unlink()
+
     def action_submit(self):
         for rec in self:
             rec.state = 'waiting_dean'
@@ -272,7 +381,18 @@ class FacultyInternshipProject(models.Model):
 
     def action_reset_draft(self):
         for rec in self:
+            part_ids = rec.participant_ids.ids
+            if part_ids:
+                ledgers = self.env['faculty.hour.ledger'].search([
+                    ('res_model', '=', 'faculty.internship.participant'),
+                    ('res_id', 'in', part_ids),
+                ])
+                for l in ledgers:
+                    if l.is_locked:
+                        raise UserError(_('Không thể chuyển về Dự thảo khi có cán bộ đã chốt Sổ cái: "%s"!') % l.name)
+                ledgers.unlink()
             rec.state = 'draft'
+            rec.message_post(body=_("Đã chuyển về trạng thái Dự thảo và hủy bút toán Sổ cái của các cán bộ."))
 
 
 class FacultyInternshipParticipant(models.Model):
@@ -291,6 +411,36 @@ class FacultyInternshipParticipant(models.Model):
     days_count = fields.Integer(string='Số ngày thực tế', default=5)
     standard_hours = fields.Float(string='Số giờ chuẩn quy đổi', default=15.0, required=True)
     notes = fields.Char(string='Ghi chú nhiệm vụ')
+
+    def write(self, vals):
+        old_data = {p.id: (p.lecturer_id.id, p.standard_hours) for p in self}
+        res = super(FacultyInternshipParticipant, self).write(vals)
+        for p in self:
+            old_lec, old_h = old_data.get(p.id, (False, 0.0))
+            if ('lecturer_id' in vals and p.lecturer_id.id != old_lec) or ('standard_hours' in vals and p.standard_hours != old_h):
+                ledgers = self.env['faculty.hour.ledger'].search([
+                    ('res_model', '=', self._name),
+                    ('res_id', '=', p.id),
+                ])
+                for l in ledgers:
+                    if l.is_locked:
+                        raise UserError(_('Không thể sửa thông tin cán bộ đã chốt Sổ cái: "%s"!') % l.name)
+                ledgers.unlink()
+                if p.project_id.state == 'approved':
+                    p.project_id.action_approve()
+        return res
+
+    def unlink(self):
+        part_ids = self.ids
+        ledgers = self.env['faculty.hour.ledger'].search([
+            ('res_model', '=', self._name),
+            ('res_id', 'in', part_ids),
+        ])
+        for l in ledgers:
+            if l.is_locked:
+                raise UserError(_('Không thể xóa cán bộ tham gia có bút toán Sổ cái đã chốt: "%s"!') % l.name)
+        ledgers.unlink()
+        return super(FacultyInternshipParticipant, self).unlink()
 
 
 class FacultyInternshipDocument(models.Model):

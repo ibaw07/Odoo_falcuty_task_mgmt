@@ -17,34 +17,59 @@ class FacultyLecturer(models.Model):
     user_id = fields.Many2one('res.users', string='Tài khoản người dùng Odoo', tracking=True,
                               help='Liên kết với tài khoản hệ thống để phân quyền và tự động lọc công việc cá nhân.')
 
-    # Học hàm & Học vị
+    # 4 Trường độc lập: Chức vụ, Chức danh, Học vị, Học hàm & Giảng viên thỉnh giảng
+    admin_position = fields.Selection([
+        ('can_bo', 'Cán bộ'),
+        ('pho_khoa', 'Phó Trưởng khoa'),
+        ('truong_khoa', 'Trưởng khoa'),
+    ], string='Chức vụ', tracking=True,
+       help='Chức vụ hành chính: Cán bộ, Phó Trưởng khoa, Trưởng khoa hoặc để trống.')
+
+    academic_rank = fields.Selection([
+        ('tro_giang', 'Trợ giảng'),
+        ('giang_vien', 'Giảng viên'),
+        ('giang_vien_chinh', 'Giảng viên chính'),
+        ('giang_vien_cao_cap', 'Giảng viên cao cấp'),
+    ], string='Chức danh', tracking=True,
+       help='Chức danh giảng dạy: Trợ giảng, Giảng viên, Giảng viên chính, Giảng viên cao cấp.')
+
+    degree = fields.Selection([
+        ('bachelor', 'Cử nhân'),
+        ('master', 'Thạc sĩ'),
+        ('doctor', 'Tiến sĩ'),
+    ], string='Học vị', default='master', tracking=True)
+    academic_degree = fields.Selection(
+        related='degree',
+        string='Học vị cao nhất',
+        store=True,
+        readonly=False
+    )
+    degree_recognition_year = fields.Integer(string='Năm công nhận học vị', placeholder='VD: 2018')
+
     academic_title = fields.Selection([
-        ('none', 'Chưa có'),
+        ('none', 'Không'),
         ('assoc_prof', 'Phó Giáo sư'),
         ('prof', 'Giáo sư'),
     ], string='Học hàm', default='none', tracking=True)
     title_appointment_year = fields.Integer(string='Năm bổ nhiệm học hàm', placeholder='VD: 2020')
 
-    academic_degree = fields.Selection([
-        ('bachelor', 'Cử nhân / Kỹ sư'),
-        ('master', 'Thạc sĩ'),
-        ('doctor', 'Tiến sĩ'),
-        ('doctor_science', 'Tiến sĩ khoa học'),
-    ], string='Học vị cao nhất', default='master', tracking=True)
-    degree_recognition_year = fields.Integer(string='Năm công nhận học vị', placeholder='VD: 2018')
+    is_visiting = fields.Boolean(
+        string='Giảng viên thỉnh giảng',
+        default=False,
+        tracking=True,
+        help='Thực hiện chế độ và tính định mức theo chức danh như giảng viên cơ hữu.'
+    )
 
-    position_title = fields.Selection([
-        ('lecturer', 'Giảng viên'),
-        ('senior_lecturer', 'Giảng viên chính'),
-        ('principal_lecturer', 'Giảng viên cao cấp'),
-        ('head_dept', 'Trưởng bộ môn'),
-        ('vice_head_dept', 'Phó Trưởng bộ môn'),
-        ('vice_dean', 'Phó Trưởng khoa'),
-        ('dean', 'Trưởng khoa'),
-        ('admin_staff', 'Giáo vụ khoa'),
-    ], string='Chức vụ / Vị trí công tác', default='lecturer', tracking=True)
+    position_title = fields.Char(string='Chức vụ cũ', compute='_compute_legacy_position_title', store=False)
 
-    title_norm_id = fields.Many2one('faculty.title.norm', string='Mức chuẩn chức danh áp dụng', tracking=True)
+    title_norm_id = fields.Many2one(
+        'faculty.title.norm',
+        string='Mức chuẩn chức danh áp dụng',
+        compute='_compute_title_norm_id',
+        store=True,
+        readonly=False,
+        tracking=True
+    )
 
     # 16 Bậc lương & Niên hạn nâng bậc
     rank_id = fields.Many2one('faculty.rank.config', string='Bậc lương hiện tại', tracking=True)
@@ -70,7 +95,7 @@ class FacultyLecturer(models.Model):
     can_manage_hr = fields.Boolean(string='Quyền quản lý nhân sự & Bậc lương', default=False, tracking=True)
 
     # Chế độ miễn giảm & Đi học >= 4 tuần
-    reduction_ids = fields.Many2many('faculty.norm.reduction', string='Chế độ miễn giảm kiêm nhiệm')
+    reduction_ids = fields.One2many('faculty.norm.reduction', 'lecturer_id', string='Bảng miễn giảm định mức thủ công')
     study_weeks = fields.Integer(string='Số tuần cử đi học/bồi dưỡng trong năm (>= 4 tuần)', default=0, tracking=True,
                                  help='Nếu đi học từ 4 tuần trở lên, tự động tính giảm định mức theo công thức Số tuần / 44.')
 
@@ -84,25 +109,40 @@ class FacultyLecturer(models.Model):
     # =========================================================================
     # 3 Ô TIÊU CHÍ TINH GỌN (1. GIẢNG DẠY - 2. NCKH - 3. HOẠT ĐỘNG KHÁC)
     # =========================================================================
-    # Tiêu chí 1: Giảng dạy
+    # Tiêu chí 1: Giảng dạy (A: Định mức thực tế phải nộp, B = 0.5 * A)
     teaching_norm_base = fields.Float(string='Định mức gốc Giảng dạy (tiết)', compute='_compute_norms', store=True)
-    teaching_norm_reduced = fields.Float(string='Định mức sau giảm (tiết)', compute='_compute_norms', store=True)
-    teaching_norm_lecture_50 = fields.Float(string='Giờ giảng định mức (50%)', compute='_compute_norms', store=True,
-                                            help='Giờ giảng định mức = 50% định mức giảng dạy sau giảm.')
+    teaching_reduction_pct = fields.Float(string='Tổng % giảm Giảng dạy', compute='_compute_norms', store=True)
+    teaching_hours_reduced = fields.Float(string='Tổng giờ GD được miễn giảm (tiết)', compute='_compute_norms', store=True)
+    teaching_norm_reduced = fields.Float(string='Định mức thực tế phải nộp A (tiết)', compute='_compute_norms', store=True,
+                                         help='A: Định mức Giảng dạy sau miễn giảm = Định mức gốc - Tổng giờ GD được miễn giảm.')
+    teaching_norm_lecture_50 = fields.Float(string='Định mức lên lớp tối thiểu (B = 0.5*A)', compute='_compute_norms', store=True,
+                                            help='B = 0.5 * A: Định mức lên lớp tối thiểu theo quy định.')
+    net_teaching_quota = fields.Float(string='Định mức GD sau miễn giảm (A)', related='teaching_norm_reduced', store=True)
+    min_classroom_quota = fields.Float(string='Định mức lên lớp tối thiểu (B)', related='teaching_norm_lecture_50', store=True)
+
     teaching_actual_lecture = fields.Float(string='Giờ giảng thực tế (đứng lớp)', compute='_compute_criteria_stats', store=False)
+    actual_classroom_hours = fields.Float(string='Giờ lên lớp thực tế (b)', related='teaching_actual_lecture', store=False)
+    other_teaching_hours = fields.Float(string='Giờ quy đổi giảng dạy khác', compute='_compute_criteria_stats', store=False)
     teaching_actual_total = fields.Float(string='Tổng số giờ thực tế Giảng dạy', compute='_compute_criteria_stats', store=False,
                                          help='Tổng = Giờ giảng đứng lớp + Coi thi + Chấm thi + Chấm kiểm tra + Ra đề mới + Hướng dẫn...')
+    total_teaching_hours = fields.Float(string='Tổng giờ giảng đạt được (a = b + khác)', related='teaching_actual_total', store=False)
     teaching_balance = fields.Float(string='Thừa / Thiếu Giảng dạy', compute='_compute_criteria_stats', store=False)
 
-    # Tiêu chí 2: Nghiên cứu khoa học
+    # Tiêu chí 2: Nghiên cứu khoa học (C: Định mức thực tế phải nộp)
     research_norm_base = fields.Float(string='Định mức gốc NCKH (giờ)', compute='_compute_norms', store=True)
-    research_norm_reduced = fields.Float(string='Định mức sau giảm NCKH (giờ)', compute='_compute_norms', store=True)
+    research_reduction_pct = fields.Float(string='Tổng % giảm NCKH', compute='_compute_norms', store=True)
+    research_hours_reduced = fields.Float(string='Tổng giờ NCKH được miễn giảm (giờ)', compute='_compute_norms', store=True)
+    research_norm_reduced = fields.Float(string='Định mức thực tế phải nộp C (giờ)', compute='_compute_norms', store=True,
+                                         help='C: Định mức NCKH sau miễn giảm = Định mức gốc - Tổng giờ NCKH được miễn giảm.')
+    net_research_quota = fields.Float(string='Định mức NCKH sau miễn giảm (C)', related='research_norm_reduced', store=True)
+
     research_actual_total = fields.Float(string='Tổng số giờ thực tế NCKH', compute='_compute_criteria_stats', store=False)
     research_balance = fields.Float(string='Thừa / Thiếu NCKH', compute='_compute_criteria_stats', store=False)
 
-    # Tiêu chí 3: Hoạt động khác
+    # Tiêu chí 3: Hoạt động khác (Không miễn giảm)
     other_norm_base = fields.Float(string='Định mức gốc HĐ khác (giờ)', compute='_compute_norms', store=True)
-    other_norm_reduced = fields.Float(string='Định mức sau giảm HĐ khác (giờ)', compute='_compute_norms', store=True)
+    other_norm_reduced = fields.Float(string='Định mức thực tế HĐ khác (giờ)', compute='_compute_norms', store=True,
+                                      help='Theo quy chế tại rules.md: Hoạt động khác KHÔNG miễn giảm.')
     other_actual_total = fields.Float(string='Tổng số giờ thực tế HĐ khác', compute='_compute_criteria_stats', store=False)
     other_balance = fields.Float(string='Thừa / Thiếu HĐ khác', compute='_compute_criteria_stats', store=False)
 
@@ -169,13 +209,53 @@ class FacultyLecturer(models.Model):
     # =========================================================================
     # COMPUTE METHODS
     # =========================================================================
-    @api.depends('rank_id', 'position_title')
+    @api.depends('rank_id', 'admin_position', 'academic_rank')
     def _compute_rank_position_display(self):
-        position_map = dict(self._fields['position_title'].selection)
+        admin_map = dict(self._fields['admin_position'].selection)
+        rank_map = dict(self._fields['academic_rank'].selection)
         for rec in self:
-            rank_str = f"Bậc {rec.rank_id.sequence}/16" if rec.rank_id else "Chưa xếp bậc"
-            pos_str = position_map.get(rec.position_title, '')
-            rec.rank_position_display = f"{rank_str} - {pos_str}" if pos_str else rank_str
+            rank_str = f"Bậc {rec.rank_id.sequence}/16" if rec.rank_id else ""
+            pos_parts = []
+            if rec.admin_position and rec.admin_position in admin_map:
+                pos_parts.append(admin_map[rec.admin_position])
+            if rec.academic_rank and rec.academic_rank in rank_map:
+                pos_parts.append(rank_map[rec.academic_rank])
+            pos_str = " - ".join(pos_parts)
+            if rank_str and pos_str:
+                rec.rank_position_display = f"{rank_str} - {pos_str}"
+            elif rank_str:
+                rec.rank_position_display = rank_str
+            elif pos_str:
+                rec.rank_position_display = pos_str
+            else:
+                rec.rank_position_display = "Chưa xếp bậc"
+
+    def _compute_legacy_position_title(self):
+        for rec in self:
+            rec.position_title = rec.admin_position or rec.academic_rank or ''
+
+    @api.depends('academic_rank')
+    def _compute_title_norm_id(self):
+        for rec in self:
+            if not rec.academic_rank:
+                rec.title_norm_id = False
+                continue
+            norms = self.env['faculty.title.norm'].search([
+                '|', ('academic_rank', '=', rec.academic_rank),
+                     ('code', '=', rec.academic_rank)
+            ])
+            if not norms:
+                rank_label = dict(self._fields['academic_rank'].selection).get(rec.academic_rank, '')
+                if rank_label:
+                    norms = self.env['faculty.title.norm'].search([('name', 'ilike', rank_label)])
+            if norms:
+                # Nếu có nhiều mức thì lấy mức cao nhất
+                rec.title_norm_id = norms.sorted(
+                    key=lambda n: (n.teaching_norm, n.research_norm, n.other_norm),
+                    reverse=True
+                )[0]
+            else:
+                rec.title_norm_id = False
 
     @api.depends('rank_date', 'rank_id.promotion_interval_months')
     def _compute_next_rank_date(self):
@@ -213,51 +293,97 @@ class FacultyLecturer(models.Model):
         else:
             return ['|', ('next_rank_date', '<', today), ('next_rank_date', '>', date_60)]
 
-    @api.depends('title_norm_id', 'reduction_ids', 'study_weeks')
+    @api.depends(
+        'academic_rank', 'title_norm_id', 'title_norm_id.teaching_norm',
+        'title_norm_id.research_norm', 'title_norm_id.other_norm',
+        'reduction_ids', 'reduction_ids.percentage', 'reduction_ids.scope',
+        'reduction_ids.academic_year_id', 'active_academic_year_id', 'study_weeks'
+    )
     def _compute_norms(self):
         """
-        Tính định mức gốc và định mức sau giảm của 3 tiêu chí
+        Tính định mức gốc và định mức thực tế phải nộp sau miễn giảm:
+        - Định mức thực tế phải nộp A (Giảng dạy) = Định mức gốc - Tổng số giờ GD được miễn giảm
+        - B = 0.5 * A: Định mức lên lớp tối thiểu
+        - Định mức thực tế phải nộp C (NCKH) = Định mức gốc - Tổng số giờ NCKH được miễn giảm
+        - Hoạt động khác: Giữ nguyên định mức gốc (KHÔNG miễn giảm theo rules.md)
         """
         for rec in self:
-            t_base = rec.title_norm_id.teaching_norm if rec.title_norm_id else 270.0
-            r_base = rec.title_norm_id.research_norm if rec.title_norm_id else 600.0
-            o_base = rec.title_norm_id.other_norm if rec.title_norm_id else 100.0
+            if rec.title_norm_id:
+                t_base = rec.title_norm_id.teaching_norm or 0.0
+                r_base = rec.title_norm_id.research_norm or 0.0
+                o_base = rec.title_norm_id.other_norm or 0.0
+            elif rec.academic_rank:
+                norms = self.env['faculty.title.norm'].search([
+                    '|', ('academic_rank', '=', rec.academic_rank),
+                         ('code', '=', rec.academic_rank)
+                ])
+                if not norms:
+                    rank_label = dict(self._fields['academic_rank'].selection).get(rec.academic_rank, '')
+                    if rank_label:
+                        norms = self.env['faculty.title.norm'].search([('name', 'ilike', rank_label)])
+                if norms:
+                    t_base = max(norms.mapped('teaching_norm'))
+                    r_base = max(norms.mapped('research_norm'))
+                    o_base = max(norms.mapped('other_norm'))
+                else:
+                    t_base = 0.0
+                    r_base = 0.0
+                    o_base = 0.0
+            else:
+                t_base = 0.0
+                r_base = 0.0
+                o_base = 0.0
 
-            # Tính tổng phần trăm giảm từ các chế độ kiêm nhiệm
-            pct_t = sum(red.percent_teaching for red in rec.reduction_ids)
-            pct_r = sum(red.percent_research for red in rec.reduction_ids)
-            pct_o = sum(red.percent_other for red in rec.reduction_ids)
+            # Lọc danh sách miễn giảm theo năm học đang theo dõi (active_academic_year_id)
+            current_year = rec.active_academic_year_id or self.env['faculty.academic.year'].search([('is_current', '=', True)], limit=1)
+            if current_year:
+                valid_reductions = rec.reduction_ids.filtered(lambda r: not r.academic_year_id or r.academic_year_id == current_year)
+            else:
+                valid_reductions = rec.reduction_ids
 
-            # Quy tắc: Đi học >= 4 tuần giảm theo công thức Số tuần / 44
+            pct_t = sum(r.percentage for r in valid_reductions if r.scope in ('teaching', 'both'))
+            pct_r = sum(r.percentage for r in valid_reductions if r.scope in ('research', 'both'))
+
+            # Đi học >= 4 tuần tự động tính giảm theo công thức: Số tuần / 44
             if rec.study_weeks >= 4:
-                study_pct = min((rec.study_weeks / 44.0) * 100.0, 100.0)
+                study_pct = (rec.study_weeks / 44.0) * 100.0
                 pct_t += study_pct
                 pct_r += study_pct
-                pct_o += study_pct
 
-            pct_t = min(pct_t, 100.0)
-            pct_r = min(pct_r, 100.0)
-            pct_o = min(pct_o, 100.0)
+            # Trần tối đa 100%
+            pct_t = min(max(pct_t, 0.0), 100.0)
+            pct_r = min(max(pct_r, 0.0), 100.0)
 
-            t_reduced = round(t_base * (1.0 - pct_t / 100.0), 2)
-            r_reduced = round(r_base * (1.0 - pct_r / 100.0), 2)
-            o_reduced = round(o_base * (1.0 - pct_o / 100.0), 2)
+            # Tổng số giờ được miễn giảm
+            teaching_hours_reduced = round(t_base * (pct_t / 100.0), 2)
+            research_hours_reduced = round(r_base * (pct_r / 100.0), 2)
+
+            # Công thức: Định mức thực tế phải nộp (A và C) = Định mức gốc - Tổng số giờ được miễn giảm
+            t_net = max(0.0, round(t_base - teaching_hours_reduced, 2))
+            r_net = max(0.0, round(r_base - research_hours_reduced, 2))
+            # Hoạt động khác: KHÔNG miễn giảm theo quy chế rules.md
+            o_net = o_base
 
             rec.teaching_norm_base = t_base
-            rec.teaching_norm_reduced = t_reduced
-            rec.teaching_norm_lecture_50 = round(t_reduced * 0.5, 2)
+            rec.teaching_reduction_pct = pct_t
+            rec.teaching_hours_reduced = teaching_hours_reduced
+            rec.teaching_norm_reduced = t_net
+            rec.teaching_norm_lecture_50 = round(t_net * 0.5, 2)
 
             rec.research_norm_base = r_base
-            rec.research_norm_reduced = r_reduced
+            rec.research_reduction_pct = pct_r
+            rec.research_hours_reduced = research_hours_reduced
+            rec.research_norm_reduced = r_net
 
             rec.other_norm_base = o_base
-            rec.other_norm_reduced = o_reduced
+            rec.other_norm_reduced = o_net
 
     def _compute_criteria_stats(self):
         """
         Tổng hợp giờ chuẩn thực tế từ Sổ cái Giờ chuẩn trung tâm qua _read_group.
         Một lần truy vấn duy nhất cho toàn bộ recordset, chống N+1 query.
-        Chỉ tính các dòng có date <= today (buổi/nhiệm vụ đã diễn ra).
+        Chỉ tính các dòng có date <= today và state = 'posted' (buổi/nhiệm vụ đã diễn ra và đã ghi sổ).
+        Groupby bao gồm ['lecturer_id', 'academic_year_id', ...] để không bị gộp nhầm số giờ giữa các năm học khác nhau.
         """
         if not self:
             return
@@ -265,7 +391,6 @@ class FacultyLecturer(models.Model):
         today = fields.Date.today()
 
         # Xây dựng domain chung cho toàn bộ recordset (1 SQL query duy nhất)
-        # Lọc theo active_academic_year_id nếu tất cả cùng năm học, nếu không bỏ qua
         lecturer_ids = self.ids
         year_ids = list(set(
             rec.active_academic_year_id.id
@@ -276,53 +401,64 @@ class FacultyLecturer(models.Model):
         domain = [
             ('lecturer_id', 'in', lecturer_ids),
             ('date', '<=', today),
+            ('state', '=', 'posted'),
         ]
         if len(year_ids) == 1:
             domain.append(('academic_year_id', '=', year_ids[0]))
         elif year_ids:
-            # Nhiều năm học khác nhau — phải gom thêm lecturer_id + academic_year_id
             domain.append(('academic_year_id', 'in', year_ids))
 
         grouped_data = self.env['faculty.hour.ledger']._read_group(
             domain=domain,
-            groupby=['lecturer_id', 'category', 'activity_type'],
+            groupby=['lecturer_id', 'academic_year_id', 'category', 'activity_type', 'is_direct_teaching'],
             aggregates=['standard_hours:sum'],
         )
 
-        # Index kết quả: {lecturer_id: {(category, activity_type): sum}}
+        # Index kết quả: {(lecturer_id, academic_year_id): {(category, activity_type, is_direct): sum}}
         stats = {}
-        for lecturer, category, activity_type, hours_sum in grouped_data:
-            lid = lecturer.id
-            stats.setdefault(lid, {})
-            stats[lid][(category, activity_type)] = hours_sum or 0.0
+        for lecturer, academic_year, category, activity_type, is_direct, hours_sum in grouped_data:
+            lid = lecturer.id if lecturer else False
+            yid = academic_year.id if academic_year else False
+            if not lid:
+                continue
+            stats.setdefault((lid, yid), {})
+            stats[(lid, yid)][(category, activity_type, is_direct)] = hours_sum or 0.0
 
         for rec in self:
-            rec_stats = stats.get(rec.id, {})
+            yid = rec.active_academic_year_id.id if rec.active_academic_year_id else False
+            rec_stats = stats.get((rec.id, yid), {})
+            if not rec_stats and not yid:
+                cur_y = self.env['faculty.academic.year'].search([('is_current', '=', True)], limit=1)
+                if cur_y:
+                    rec_stats = stats.get((rec.id, cur_y.id), {})
 
-            actual_teaching_total = 0.0
             actual_teaching_lecture = 0.0
+            actual_other_teaching = 0.0
             actual_research_total = 0.0
             actual_other_total = 0.0
 
-            for (cat, atype), hours in rec_stats.items():
+            for (cat, atype, is_dir), hours in rec_stats.items():
                 if cat == 'teaching':
-                    actual_teaching_total += hours
-                    if atype == 'lecture':
+                    if is_dir or atype == 'lecture':
                         actual_teaching_lecture += hours
+                    else:
+                        actual_other_teaching += hours
                 elif cat == 'research':
                     actual_research_total += hours
                 elif cat == 'other':
                     actual_other_total += hours
 
-            rec.teaching_actual_lecture = actual_teaching_lecture
+            actual_teaching_total = round(actual_teaching_lecture + actual_other_teaching, 2)
+            rec.teaching_actual_lecture = round(actual_teaching_lecture, 2)
+            rec.other_teaching_hours = round(actual_other_teaching, 2)
             rec.teaching_actual_total = actual_teaching_total
-            rec.teaching_balance = actual_teaching_total - rec.teaching_norm_reduced
+            rec.teaching_balance = round(actual_teaching_total - rec.teaching_norm_reduced, 2)
 
-            rec.research_actual_total = actual_research_total
-            rec.research_balance = actual_research_total - rec.research_norm_reduced
+            rec.research_actual_total = round(actual_research_total, 2)
+            rec.research_balance = round(actual_research_total - rec.research_norm_reduced, 2)
 
-            rec.other_actual_total = actual_other_total
-            rec.other_balance = actual_other_total - rec.other_norm_reduced
+            rec.other_actual_total = round(actual_other_total, 2)
+            rec.other_balance = round(actual_other_total - rec.other_norm_reduced, 2)
 
     # =========================================================================
     # ACTIONS & SYNC
@@ -340,6 +476,11 @@ class FacultyLecturer(models.Model):
         if any(k in vals for k in perm_keys):
             for rec in self:
                 rec._sync_security_groups()
+        norm_keys = ['academic_rank', 'title_norm_id', 'study_weeks', 'active_academic_year_id']
+        if any(k in vals for k in norm_keys):
+            Balance = self.env['faculty.workload.balance']
+            for rec in self:
+                Balance.recompute_for_lecturer(rec.id, rec.active_academic_year_id.id if rec.active_academic_year_id else None)
         return res
 
     def _sync_security_groups(self):
