@@ -519,8 +519,90 @@ class FacultyLecturer(models.Model):
             else:
                 cmds.append((3, dean_group.id))
 
+        # Luôn đảm bảo tài khoản có nhóm quyền cơ bản của Giảng viên (group_faculty_user)
+        user_group = self.env.ref('faculty_work_mgmt.group_faculty_user', raise_if_not_found=False)
+        if user_group:
+            cmds.append((4, user_group.id))
+
         if cmds:
-            self.user_id.sudo().write({'groups_id': cmds})
+            group_field = 'group_ids' if 'group_ids' in self.env['res.users']._fields else 'groups_id'
+            self.user_id.sudo().write({group_field: cmds})
+
+    def action_create_user_account(self):
+        """
+        Tạo nhanh tài khoản người dùng Odoo cho giảng viên kèm mật khẩu mặc định (123456)
+        và tự động liên kết, đồng bộ nhóm quyền ngay lập tức mà không cần email xác nhận.
+        """
+        self.ensure_one()
+        if self.user_id:
+            raise UserError('Giảng viên này đã có tài khoản người dùng liên kết: %s' % (self.user_id.login or self.user_id.name))
+
+        # Ưu tiên lấy email, nếu không có lấy theo mã giảng viên
+        login = self.email or (self.lecturer_code and f"{self.lecturer_code.strip().lower()}@vnua.edu.vn")
+        if not login:
+            raise UserError('Vui lòng nhập Email hoặc Mã giảng viên trên hồ sơ trước khi tạo tài khoản.')
+
+        login = login.strip()
+
+        # Kiểm tra xem tài khoản này đã tồn tại trong res.users chưa
+        User = self.env['res.users'].sudo()
+        existing = User.search([('login', '=', login)], limit=1)
+        if existing:
+            self.write({'user_id': existing.id})
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Đã liên kết tài khoản',
+                    'message': f'Đã liên kết với tài khoản có sẵn ({existing.login}) thành công!',
+                    'sticky': False,
+                    'type': 'success',
+                }
+            }
+
+        group_field = 'group_ids' if 'group_ids' in User._fields else 'groups_id'
+        user_group = self.env.ref('faculty_work_mgmt.group_faculty_user', raise_if_not_found=False)
+        groups = [(4, user_group.id)] if user_group else []
+
+        new_user = User.create({
+            'name': self.name,
+            'login': login,
+            'password': '123456', # Tạo trực tiếp bỏ qua email xác nhận
+            'partner_id': self.partner_id.id,
+            group_field: groups,
+        })
+        new_user.write({'password': '123456'})
+        self.write({'user_id': new_user.id})
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Tạo tài khoản thành công',
+                'message': f'Đã tạo tài khoản cho {self.name}!\nTên đăng nhập: {login}\nMật khẩu khởi tạo: 123456',
+                'sticky': True,
+                'type': 'success',
+            }
+        }
+
+    def action_reset_password_default(self):
+        """
+        Đặt lại mật khẩu cho tài khoản người dùng liên kết về mặc định: 123456
+        """
+        self.ensure_one()
+        if not self.user_id:
+            raise UserError('Chưa có tài khoản người dùng nào được liên kết với giảng viên này.')
+        self.user_id.sudo().write({'password': '123456'})
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Đặt lại mật khẩu thành công',
+                'message': f'Mật khẩu của tài khoản {self.user_id.login} đã được đặt về: 123456',
+                'sticky': False,
+                'type': 'success',
+            }
+        }
 
     def action_check_promotion_reminders(self):
         """

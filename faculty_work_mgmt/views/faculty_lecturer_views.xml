@@ -377,6 +377,21 @@
                             <group>
                                 <group string="Tài khoản Người dùng Odoo">
                                     <field name="user_id"/>
+                                    <div class="mt-2" colspan="2">
+                                        <button name="action_create_user_account"
+                                                string="⚡ Tạo nhanh tài khoản &amp; Mật khẩu (123456)"
+                                                type="object"
+                                                class="btn btn-primary btn-sm me-2"
+                                                invisible="user_id"
+                                                help="Tự động tạo tài khoản người dùng Odoo cho giảng viên kèm mật khẩu mặc định 123456, không cần xác nhận qua email."/>
+                                        <button name="action_reset_password_default"
+                                                string="🔑 Đặt lại mật khẩu về 123456"
+                                                type="object"
+                                                class="btn btn-secondary btn-sm"
+                                                invisible="not user_id"
+                                                confirm="Bạn có chắc chắn muốn đặt lại mật khẩu của tài khoản này thành 123456?"
+                                                help="Đặt lại mật khẩu của tài khoản này về 123456 trực tiếp không cần email."/>
+                                    </div>
                                 </group>
                                 <group string="Chữ ký điện tử / Chữ ký số">
                                     <field name="signature_image" widget="image" class="oe_avatar" string="Ảnh chữ ký số"/>
